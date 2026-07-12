@@ -1,6 +1,6 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Players = game:GetService("Players")
-
+local keybindsEnabled = true
 local Window = Rayfield:CreateWindow({
    Name = "Wacky Hub",
    Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
@@ -211,8 +211,14 @@ local flySpeed = 50
 local bodyVelocity
 local bodyGyro
 local flyConnection
+local updatingFlyFromCode = false
 
 local function startFly()
+    -- Clean up any leftover instances first
+    if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+
     local char = game:GetService("Players").LocalPlayer.Character
     local hrp = char:WaitForChild("HumanoidRootPart")
     local hum = char:WaitForChild("Humanoid")
@@ -234,24 +240,12 @@ local function startFly()
         local moveDir = Vector3.new(0, 0, 0)
         local uis = game:GetService("UserInputService")
 
-        if uis:IsKeyDown(Enum.KeyCode.W) then
-            moveDir += cam.CFrame.LookVector
-        end
-        if uis:IsKeyDown(Enum.KeyCode.S) then
-            moveDir -= cam.CFrame.LookVector
-        end
-        if uis:IsKeyDown(Enum.KeyCode.A) then
-            moveDir -= cam.CFrame.RightVector
-        end
-        if uis:IsKeyDown(Enum.KeyCode.D) then
-            moveDir += cam.CFrame.RightVector
-        end
-        if uis:IsKeyDown(Enum.KeyCode.Space) then
-            moveDir += Vector3.new(0, 1, 0)
-        end
-        if uis:IsKeyDown(Enum.KeyCode.LeftControl) then
-            moveDir -= Vector3.new(0, 1, 0)
-        end
+        if uis:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector end
+        if uis:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector end
+        if uis:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector end
+        if uis:IsKeyDown(Enum.KeyCode.D) then moveDir += cam.CFrame.RightVector end
+        if uis:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
+        if uis:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir -= Vector3.new(0, 1, 0) end
 
         if moveDir.Magnitude > 0 then
             bodyVelocity.Velocity = moveDir.Unit * flySpeed
@@ -266,22 +260,45 @@ local function stopFly()
     local char = game:GetService("Players").LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
     if hum then hum.PlatformStand = false end
-    if bodyVelocity then bodyVelocity:Destroy() end
-    if bodyGyro then bodyGyro:Destroy() end
-    if flyConnection then flyConnection:Disconnect() end
+    if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
 end
 
-Tab:CreateToggle({
+local FlyToggle = Tab:CreateToggle({
     Name = "Fly",
     CurrentValue = false,
     Flag = "FlyToggle",
     Callback = function(Value)
+        if updatingFlyFromCode then return end -- guard added
         flying = Value
         if flying then
             startFly()
         else
             stopFly()
         end
+    end,
+})
+
+local lastFlyToggleTime = 0
+
+Tab:CreateKeybind({
+    Name = "Fly Keybind",
+    CurrentKeybind = "F",
+    HoldToInteract = false,
+    Flag = "FlyKeybind",
+    Callback = function()
+        if not keybindsEnabled then return end -- added
+        local now = tick()
+        if now - lastFlyToggleTime < 0.3 then return end
+        lastFlyToggleTime = now
+
+        flying = not flying
+        if flying then startFly() else stopFly() end
+
+        updatingFlyFromCode = true
+        FlyToggle:Set(flying)
+        updatingFlyFromCode = false
     end,
 })
 
@@ -322,7 +339,7 @@ local Players = game:GetService("Players")
 local freecamOn = false
 local freecamSpeed = 50
 local savedCameraType
-local savedAnchored
+local updatingFreecamFromCode = false
 
 local camYaw = 0
 local camPitch = 0
@@ -348,20 +365,23 @@ local function toggleFreecam(enabled)
         currentVelocity = Vector3.new(0, 0, 0)
 
         if hrp then
-            savedAnchored = hrp.Anchored
             hrp.Anchored = true
         end
+
+        print("Freecam ON — camera type is now:", camera.CameraType)
     else
         camera.CameraType = savedCameraType or Enum.CameraType.Custom
         if hrp then
-            hrp.Anchored = savedAnchored or false
+            hrp.Anchored = false
         end
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
         rightMouseDown = false
+
+        print("Freecam OFF — camera type restored to:", camera.CameraType)
     end
 end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
+UserInputService.InputBegan:Connect(function(input)
     if not freecamOn then return end
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         rightMouseDown = true
@@ -369,7 +389,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input, gameProcessed)
+UserInputService.InputEnded:Connect(function(input)
     if not freecamOn then return end
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         rightMouseDown = false
@@ -377,40 +397,27 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if not freecamOn or not rightMouseDown then return end
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        camYaw = camYaw - (input.Delta.X * mouseSensitivity)
-        camPitch = camPitch - (input.Delta.Y * mouseSensitivity)
-        camPitch = math.clamp(camPitch, -math.rad(89), math.rad(89))
-    end
-end)
-
-RunService.RenderStepped:Connect(function(deltaTime)
+RunService:BindToRenderStep("FreecamUpdate", Enum.RenderPriority.Camera.Value + 1, function(deltaTime)
     if not freecamOn then return end
     local camera = workspace.CurrentCamera
+
+    -- Poll mouse delta directly instead of relying on InputChanged events
+    if rightMouseDown then
+        local delta = UserInputService:GetMouseDelta()
+        camYaw = camYaw - (delta.X * mouseSensitivity)
+        camPitch = camPitch - (delta.Y * mouseSensitivity)
+        camPitch = math.clamp(camPitch, -math.rad(89), math.rad(89))
+    end
 
     local rotationCFrame = CFrame.fromOrientation(camPitch, camYaw, 0)
 
     local moveDir = Vector3.new(0, 0, 0)
-    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-        moveDir += rotationCFrame.LookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-        moveDir -= rotationCFrame.LookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-        moveDir -= rotationCFrame.RightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-        moveDir += rotationCFrame.RightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-        moveDir += Vector3.new(0, 1, 0)
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-        moveDir -= Vector3.new(0, 1, 0)
-    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += rotationCFrame.LookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= rotationCFrame.LookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= rotationCFrame.RightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += rotationCFrame.RightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir -= Vector3.new(0, 1, 0) end
 
     local targetVelocity = Vector3.new(0, 0, 0)
     if moveDir.Magnitude > 0 then
@@ -424,13 +431,36 @@ RunService.RenderStepped:Connect(function(deltaTime)
     camera.CFrame = CFrame.new(newPosition) * rotationCFrame
 end)
 
-Tab:CreateToggle({
+local FreecamToggle = Tab:CreateToggle({
     Name = "Freecam",
     CurrentValue = false,
     Flag = "FreecamToggle",
     Callback = function(Value)
+        if updatingFreecamFromCode then return end
         freecamOn = Value
         toggleFreecam(Value)
+    end,
+})
+
+local lastFreecamToggleTime = 0
+
+Tab:CreateKeybind({
+    Name = "Freecam Keybind",
+    CurrentKeybind = "C",
+    HoldToInteract = false,
+    Flag = "FreecamKeybind",
+    Callback = function()
+        if not keybindsEnabled then return end -- added
+        local now = tick()
+        if now - lastFreecamToggleTime < 0.3 then return end
+        lastFreecamToggleTime = now
+
+        freecamOn = not freecamOn
+        toggleFreecam(freecamOn)
+
+        updatingFreecamFromCode = true
+        FreecamToggle:Set(freecamOn)
+        updatingFreecamFromCode = false
     end,
 })
 
@@ -549,3 +579,16 @@ Players.PlayerRemoving:Connect(function()
     TeleportDropdown:Refresh(getPlayerNames())
 end)
 
+
+
+local Tab = Window:CreateTab("Settings", 4483362458)
+local Divider = Tab:CreateDivider()
+
+local KeybindsToggle = Tab:CreateToggle({
+    Name = "Enable Keybinds",
+    CurrentValue = true,
+    Flag = "KeybindsEnabledToggle",
+    Callback = function(Value)
+        keybindsEnabled = Value
+    end,
+})
