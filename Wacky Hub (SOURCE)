@@ -1,4 +1,5 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Players = game:GetService("Players")
 
 local Window = Rayfield:CreateWindow({
    Name = "Wacky Hub",
@@ -51,12 +52,102 @@ local Divider = Tab:CreateDivider()
 
 local Label = Tab:CreateLabel("Welcome to Wacky Hub", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
 
+local localPlayer = Players.LocalPlayer
+local accountText = "Logged in as: Unknown"
+if localPlayer then
+    accountText = "Logged in as: " .. localPlayer.DisplayName .. " (@" .. localPlayer.Name .. ")"
+end
+
+local AccountLabel = Tab:CreateLabel(accountText, 4483362458, Color3.fromRGB(255, 255, 255), false)
+
+local profilePicGui = nil
+local profilePicVisible = false
+
+local function getGuiParent()
+    if gethui then
+        return gethui()
+    else
+        return Players.LocalPlayer:WaitForChild("PlayerGui")
+    end
+end
+
+local function createProfilePicGui()
+    if profilePicGui then return end
+
+    local success, thumbnail = pcall(function()
+        return Players:GetUserThumbnailAsync(
+            Players.LocalPlayer.UserId,
+            Enum.ThumbnailType.HeadShot,
+            Enum.ThumbnailSize.Size420x420
+        )
+    end)
+
+    if not success then
+        warn("Failed to get thumbnail")
+        return
+    end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "ProfilePicDisplay"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Enabled = false
+    ScreenGui.Parent = getGuiParent()
+
+    -- Outer frame now taller to fit the name below the image
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 150, 0, 190)
+    Frame.Position = UDim2.new(0.5, -75, 0, 20)
+    Frame.BackgroundTransparency = 1
+    Frame.Parent = ScreenGui
+
+    local ProfilePic = Instance.new("ImageLabel")
+    ProfilePic.Size = UDim2.new(0, 150, 0, 150)
+    ProfilePic.Position = UDim2.new(0, 0, 0, 0)
+    ProfilePic.Image = thumbnail
+    ProfilePic.BackgroundTransparency = 1
+    ProfilePic.Parent = Frame
+
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Size = UDim2.new(1, 0, 0, 30)
+    NameLabel.Position = UDim2.new(0, 0, 0, 155)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.Text = Players.LocalPlayer.DisplayName .. " (@" .. Players.LocalPlayer.Name .. ")"
+    NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NameLabel.TextStrokeTransparency = 0
+    NameLabel.Font = Enum.Font.SourceSansBold
+    NameLabel.TextScaled = true
+    NameLabel.Parent = Frame
+
+    profilePicGui = ScreenGui
+end
+
+Tab:CreateToggle({
+    Name = "Show Profile Picture",
+    CurrentValue = false,
+    Flag = "ProfilePicToggle",
+    Callback = function(Value)
+        profilePicVisible = Value
+        if Value then
+            createProfilePicGui()
+            if profilePicGui then
+                profilePicGui.Enabled = true
+            end
+        else
+            if profilePicGui then
+                profilePicGui.Enabled = false
+            end
+        end
+    end,
+})
+
 local Button = Tab:CreateButton({
    Name = "Destroy UI",
    Callback = function()
    Rayfield:Destroy()
    end,
 })
+
+
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -113,20 +204,7 @@ local Slider = Tab:CreateSlider({
    end,
 })
 
-local Slider = Tab:CreateSlider({
-   Name = "FOV Changer",
-   Range = {0, 120},
-   Increment = 1,
-   Suffix = "FOV",
-   CurrentValue = 70,
-   Flag = "fovchanger", -- was duplicate "jumpheight"
-   Callback = function(Value)
-      local camera = workspace.CurrentCamera
-      if camera then
-         camera.FieldOfView = Value
-      end
-   end,
-})
+
 -- Fly variables
 local flying = false
 local flySpeed = 50
@@ -219,6 +297,156 @@ Tab:CreateSlider({
     end,
 })
 
+local Tab = Window:CreateTab("Camera", 4483362458) -- Title, Image
+local Divider = Tab:CreateDivider()
+
+local Slider = Tab:CreateSlider({
+   Name = "FOV Changer",
+   Range = {0, 120},
+   Increment = 1,
+   Suffix = "FOV",
+   CurrentValue = 70,
+   Flag = "fovchanger", -- was duplicate "jumpheight"
+   Callback = function(Value)
+      local camera = workspace.CurrentCamera
+      if camera then
+         camera.FieldOfView = Value
+      end
+   end,
+})
+
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+local freecamOn = false
+local freecamSpeed = 50
+local savedCameraType
+local savedAnchored
+
+local camYaw = 0
+local camPitch = 0
+local mouseSensitivity = 0.002
+local rightMouseDown = false
+
+local currentVelocity = Vector3.new(0, 0, 0)
+local smoothingFactor = 8
+
+local function toggleFreecam(enabled)
+    local camera = workspace.CurrentCamera
+    local char = Players.LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+    if enabled then
+        savedCameraType = camera.CameraType
+
+        local lookVector = camera.CFrame.LookVector
+        camYaw = math.atan2(-lookVector.X, -lookVector.Z)
+        camPitch = math.asin(lookVector.Y)
+
+        camera.CameraType = Enum.CameraType.Scriptable
+        currentVelocity = Vector3.new(0, 0, 0)
+
+        if hrp then
+            savedAnchored = hrp.Anchored
+            hrp.Anchored = true
+        end
+    else
+        camera.CameraType = savedCameraType or Enum.CameraType.Custom
+        if hrp then
+            hrp.Anchored = savedAnchored or false
+        end
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        rightMouseDown = false
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not freecamOn then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        rightMouseDown = true
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if not freecamOn then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        rightMouseDown = false
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not freecamOn or not rightMouseDown then return end
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        camYaw = camYaw - (input.Delta.X * mouseSensitivity)
+        camPitch = camPitch - (input.Delta.Y * mouseSensitivity)
+        camPitch = math.clamp(camPitch, -math.rad(89), math.rad(89))
+    end
+end)
+
+RunService.RenderStepped:Connect(function(deltaTime)
+    if not freecamOn then return end
+    local camera = workspace.CurrentCamera
+
+    local rotationCFrame = CFrame.fromOrientation(camPitch, camYaw, 0)
+
+    local moveDir = Vector3.new(0, 0, 0)
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+        moveDir += rotationCFrame.LookVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+        moveDir -= rotationCFrame.LookVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+        moveDir -= rotationCFrame.RightVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+        moveDir += rotationCFrame.RightVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+        moveDir += Vector3.new(0, 1, 0)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        moveDir -= Vector3.new(0, 1, 0)
+    end
+
+    local targetVelocity = Vector3.new(0, 0, 0)
+    if moveDir.Magnitude > 0 then
+        targetVelocity = moveDir.Unit * freecamSpeed
+    end
+
+    local alpha = 1 - math.exp(-smoothingFactor * deltaTime)
+    currentVelocity = currentVelocity:Lerp(targetVelocity, alpha)
+
+    local newPosition = camera.CFrame.Position + currentVelocity * deltaTime
+    camera.CFrame = CFrame.new(newPosition) * rotationCFrame
+end)
+
+Tab:CreateToggle({
+    Name = "Freecam",
+    CurrentValue = false,
+    Flag = "FreecamToggle",
+    Callback = function(Value)
+        freecamOn = Value
+        toggleFreecam(Value)
+    end,
+})
+
+Tab:CreateSlider({
+    Name = "Freecam Speed",
+    Range = {10, 300},
+    Increment = 5,
+    Suffix = "spd",
+    CurrentValue = 50,
+    Flag = "FreecamSpeedSlider",
+    Callback = function(Value)
+        freecamSpeed = Value
+    end,
+})
+
+
 local Tab = Window:CreateTab("Scripts", 4483362458) -- Title, Image
 local Divider = Tab:CreateDivider()
 
@@ -269,4 +497,55 @@ Tab:CreateButton({
 })
 
 
+local Tab = Window:CreateTab("Teleportation", 4483362458) -- Title, Image
+local Divider = Tab:CreateDivider()
+
+local Players = game:GetService("Players")
+
+local function getPlayerNames()
+    local names = {}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= Players.LocalPlayer then
+            table.insert(names, plr.Name)
+        end
+    end
+    return names
+end
+
+local selectedPlayer = nil
+
+local TeleportDropdown = Tab:CreateDropdown({
+   Name = "Select Player",
+   Options = getPlayerNames(),
+   CurrentOption = {},
+   MultipleOptions = false,
+   Flag = "TeleportPlayerDropdown",
+   Callback = function(Option)
+      selectedPlayer = Option[1]
+   end,
+})
+
+Tab:CreateButton({
+    Name = "Teleport to Player",
+    Callback = function()
+        if not selectedPlayer then return end
+        local targetPlayer = Players:FindFirstChild(selectedPlayer)
+        local myChar = Players.LocalPlayer.Character
+        if targetPlayer and targetPlayer.Character and myChar then
+            local targetHrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+            if targetHrp and myHrp then
+                myHrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
+            end
+        end
+    end,
+})
+
+-- Refresh player list when someone joins/leaves
+Players.PlayerAdded:Connect(function()
+    TeleportDropdown:Refresh(getPlayerNames())
+end)
+Players.PlayerRemoving:Connect(function()
+    TeleportDropdown:Refresh(getPlayerNames())
+end)
 
