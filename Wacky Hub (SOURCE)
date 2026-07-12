@@ -278,13 +278,11 @@ local Divider = SettingsTab:CreateDivider()
 SettingsTab:CreateDropdown({
    Name = "UI Theme",
    Options = {"Default", "Ocean", "AmberGlow", "Amethyst", "Green", "Bloom", "DarkBlue", "Serenity", "Light"},
-   CurrentOption = {getgenv().SelectedTheme},
+   CurrentOption = {"Default"}, -- hardcoded instead of getgenv().SelectedTheme for testing
    MultipleOptions = false,
    Flag = "ThemeDropdown",
    Callback = function(Option)
       getgenv().SelectedTheme = Option[1]
-      Rayfield:Destroy()
-      loadstring(game:HttpGet('https://raw.githubusercontent.com/fisticuffz/Wacky-Hub/refs/heads/Source/Wacky%20Hub%20(SOURCE)'))() -- Wait, use your actual script's source URL here
    end,
 })
 
