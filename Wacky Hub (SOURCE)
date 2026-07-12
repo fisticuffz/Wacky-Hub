@@ -275,15 +275,13 @@ Tab:CreateButton({
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
 local Divider = SettingsTab:CreateDivider()
 
-SettingsTab:CreateDropdown({
-   Name = "UI Theme",
-   Options = {"Default", "Ocean", "AmberGlow", "Amethyst", "Green", "Bloom", "DarkBlue", "Serenity", "Light"},
-   CurrentOption = {getgenv().SelectedTheme or "AmberGlow"},
-   MultipleOptions = false,
-   Flag = "ThemeDropdown",
-   Callback = function(Option)
-      getgenv().SelectedTheme = Option[1]
-      Rayfield:Destroy()
-      loadstring(game:HttpGet('https://github.com/fisticuffz/Wacky-Hub/raw/refs/heads/Source/Wacky%20Hub%20(SOURCE)'))()
-   end,
-})
+for _, themeName in ipairs({"Default", "Ocean", "AmberGlow", "Amethyst", "Green", "Bloom", "DarkBlue", "Serenity", "Light"}) do
+    SettingsTab:CreateButton({
+        Name = "Theme: " .. themeName,
+        Callback = function()
+            getgenv().SelectedTheme = themeName
+            Rayfield:Destroy()
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/fisticuffz/Wacky-Hub/refs/heads/Source/Wacky%20Hub%20(SOURCE)'))()
+        end,
+    })
+end
