@@ -276,7 +276,7 @@ local SettingsTab = Window:CreateTab("Settings", 4483362458)
 local Divider = SettingsTab:CreateDivider()
 
 SettingsTab:CreateDropdown({
-   Name = "Theme",
+   Name = "UI Theme",
    Options = {"Default", "Ocean", "AmberGlow", "Amethyst", "Green", "Bloom", "DarkBlue", "Serenity", "Light"},
    CurrentOption = {getgenv().SelectedTheme},
    MultipleOptions = false,
