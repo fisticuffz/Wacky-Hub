@@ -1,5 +1,9 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+if not getgenv().SelectedTheme then
+    getgenv().SelectedTheme = "AmberGlow"
+end
+
 local Window = Rayfield:CreateWindow({
    Name = "Wacky Hub",
    Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
@@ -16,7 +20,7 @@ local Window = Rayfield:CreateWindow({
    -- ScriptID = "sid_xxxxxxxxxxxx", -- Your Script ID from developer.sirius.menu — enables analytics, managed keys, and script hosting
 
    ConfigurationSaving = {
-      Enabled = true,
+      Enabled = false,
       FolderName = "Wacky Hub", -- Create a custom folder for your hub/game
       FileName = "Wacky Hub"
    },
@@ -58,6 +62,21 @@ local Button = Tab:CreateButton({
    end,
 })
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local walkSpeedValue = 10
+local jumpHeightValue = 10
+
+RunService.Heartbeat:Connect(function()
+    local char = Players.LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    if hum then
+        hum.WalkSpeed = walkSpeedValue
+        hum.JumpHeight = jumpHeightValue
+    end
+end)
+
 
 local Tab = Window:CreateTab("Local Player", 4483362458) -- Title, Image
 local Divider = Tab:CreateDivider()
@@ -68,9 +87,9 @@ local Slider = Tab:CreateSlider({
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 10,
-   Flag = "walkspeed", -- A flag is the identifier for the configuration file; make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "walkspeed",
    Callback = function(Value)
-   game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      walkSpeedValue = Value
    end,
 })
 
@@ -80,9 +99,9 @@ local Slider = Tab:CreateSlider({
    Increment = 1,
    Suffix = "Jump Power",
    CurrentValue = 10,
-   Flag = "jumpheight", -- A flag is the identifier for the configuration file; make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "jumpheight",
    Callback = function(Value)
-   game.Players.LocalPlayer.Character.Humanoid.JumpHeight = Value
+      jumpHeightValue = Value
    end,
 })
 
@@ -92,9 +111,9 @@ local Slider = Tab:CreateSlider({
    Increment = 10,
    Suffix = "Gravity",
    CurrentValue = 196.2,
-   Flag = "jumpheight", -- A flag is the identifier for the configuration file; make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "gravity", -- was duplicate "jumpheight"
    Callback = function(Value)
-   game.workspace.Gravity = Value
+      game.workspace.Gravity = Value
    end,
 })
 
@@ -104,13 +123,104 @@ local Slider = Tab:CreateSlider({
    Increment = 1,
    Suffix = "FOV",
    CurrentValue = 70,
-   Flag = "jumpheight", -- A flag is the identifier for the configuration file; make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "fovchanger", -- was duplicate "jumpheight"
    Callback = function(Value)
-   local camera = workspace.CurrentCamera
-   if camera then
-     camera.FieldOfView = Value
-	 end
+      local camera = workspace.CurrentCamera
+      if camera then
+         camera.FieldOfView = Value
+      end
    end,
+})
+-- Fly variables
+local flying = false
+local flySpeed = 50
+local bodyVelocity
+local bodyGyro
+local flyConnection
+
+local function startFly()
+    local char = game:GetService("Players").LocalPlayer.Character
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+
+    hum.PlatformStand = true
+
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = hrp
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bodyGyro.P = 10000
+    bodyGyro.Parent = hrp
+
+    flyConnection = game:GetService("RunService").RenderStepped:Connect(function()
+        local cam = workspace.CurrentCamera
+        local moveDir = Vector3.new(0, 0, 0)
+        local uis = game:GetService("UserInputService")
+
+        if uis:IsKeyDown(Enum.KeyCode.W) then
+            moveDir += cam.CFrame.LookVector
+        end
+        if uis:IsKeyDown(Enum.KeyCode.S) then
+            moveDir -= cam.CFrame.LookVector
+        end
+        if uis:IsKeyDown(Enum.KeyCode.A) then
+            moveDir -= cam.CFrame.RightVector
+        end
+        if uis:IsKeyDown(Enum.KeyCode.D) then
+            moveDir += cam.CFrame.RightVector
+        end
+        if uis:IsKeyDown(Enum.KeyCode.Space) then
+            moveDir += Vector3.new(0, 1, 0)
+        end
+        if uis:IsKeyDown(Enum.KeyCode.LeftControl) then
+            moveDir -= Vector3.new(0, 1, 0)
+        end
+
+        if moveDir.Magnitude > 0 then
+            bodyVelocity.Velocity = moveDir.Unit * flySpeed
+        else
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
+        bodyGyro.CFrame = cam.CFrame
+    end)
+end
+
+local function stopFly()
+    local char = game:GetService("Players").LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    if hum then hum.PlatformStand = false end
+    if bodyVelocity then bodyVelocity:Destroy() end
+    if bodyGyro then bodyGyro:Destroy() end
+    if flyConnection then flyConnection:Disconnect() end
+end
+
+Tab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Flag = "FlyToggle",
+    Callback = function(Value)
+        flying = Value
+        if flying then
+            startFly()
+        else
+            stopFly()
+        end
+    end,
+})
+
+Tab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {10, 300},
+    Increment = 5,
+    Suffix = "spd",
+    CurrentValue = 50,
+    Flag = "FlySpeedSlider",
+    Callback = function(Value)
+        flySpeed = Value
+    end,
 })
 
 local Tab = Window:CreateTab("Scripts", 4483362458) -- Title, Image
@@ -143,3 +253,38 @@ local Button = Tab:CreateButton({
   loadstring(game:HttpGet('https://raw.githubusercontent.com/ZentosDevOFF/SynSaveInstance-/main/ssi%2B%2B.lua'))()
    end,
 })
+
+local Section = Tab:CreateSection("Rejoin Server / Server Hop")
+
+Tab:CreateButton({
+    Name = "Rejoin Same Server",
+    Callback = function()
+        local TeleportService = game:GetService("TeleportService")
+        local Players = game:GetService("Players")
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
+    end,
+})
+
+Tab:CreateButton({
+    Name = "Join New Server",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
+    end,
+})
+
+local SettingsTab = Window:CreateTab("Settings", 4483362458)
+local Divider = SettingsTab:CreateDivider()
+
+SettingsTab:CreateDropdown({
+   Name = "Theme",
+   Options = {"Default", "Ocean", "AmberGlow", "Amethyst", "Green", "Bloom", "DarkBlue", "Serenity", "Light"},
+   CurrentOption = {getgenv().SelectedTheme},
+   MultipleOptions = false,
+   Flag = "ThemeDropdown",
+   Callback = function(Option)
+      getgenv().SelectedTheme = Option[1]
+      Rayfield:Destroy()
+      loadstring(game:HttpGet('https://raw.githubusercontent.com/fisticuffz/Wacky-Hub/refs/heads/Source/Wacky%20Hub%20(SOURCE)'))() -- Wait, use your actual script's source URL here
+   end,
+})
+
