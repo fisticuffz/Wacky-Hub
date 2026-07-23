@@ -209,6 +209,26 @@ end)
 
 homeTab:CreateSection({ name = "Interface" })
 
+local executorName = "Unknown"
+local execSuccess, execResult = pcall(function()
+    if identifyexecutor then
+        return identifyexecutor()
+    elseif getexecutorname then
+        return getexecutorname()
+    end
+    return "Unknown"
+end)
+
+if execSuccess and execResult then
+    executorName = execResult
+end
+
+homeTab:CreateButton({
+    name = "Executor",
+    description = executorName,
+    callback = function() end,
+})
+
 local fpsStat = homeTab:CreateStat({
     name = "FPS",
     value = 0,
@@ -810,7 +830,10 @@ getgenv().WackyHubESPConn = RunService.Heartbeat:Connect(function()
     end
 end)
 
-cameraTab:CreateToggle({
+local espGrid = cameraTab:CreateGroup()
+
+local espLeft = espGrid:CreateGroup({ direction = "column" })
+espLeft:CreateToggle({
     name = "ESP",
     value = false,
     flag = "ESPToggle",
@@ -818,8 +841,7 @@ cameraTab:CreateToggle({
         espEnabled = value
     end,
 })
-
-cameraTab:CreateToggle({
+espLeft:CreateToggle({
     name = "Tracers",
     value = false,
     flag = "TracersToggle",
@@ -828,7 +850,8 @@ cameraTab:CreateToggle({
     end,
 })
 
-cameraTab:CreateToggle({
+local espRight = espGrid:CreateGroup({ direction = "column" })
+espRight:CreateToggle({
     name = "Team Color ESP",
     value = false,
     flag = "TeamColorToggle",
@@ -839,14 +862,16 @@ cameraTab:CreateToggle({
 
 local scriptsTab = Window:CreateTab({ name = "Scripts", icon = 4483362458 })
 
-scriptsTab:CreateButton({
+local topScriptsGroup = scriptsTab:CreateGroup({ direction = "row" })
+
+topScriptsGroup:CreateButton({
     name = "Infinity Yield",
     callback = function()
         loadstring(game:HttpGet('https://raw.githubusercontent.com/edgeiy/infiniteyield/master/source'))()
     end,
 })
 
-scriptsTab:CreateButton({
+topScriptsGroup:CreateButton({
     name = "Better Save Instance",
     callback = function()
         loadstring(game:HttpGet('https://raw.githubusercontent.com/ZentosDevOFF/SynSaveInstance-/main/ssi%2B%2B.lua'))()
@@ -856,8 +881,8 @@ scriptsTab:CreateButton({
 scriptsTab:CreateSection({ name = "Rejoin Server / Server Hop" })
 
 scriptsTab:CreateButton({
-    name = "Serverhop / Rejoin",
-    description = "Rejoin Or ServerHop",
+    name = "Rejoin Server",
+    description = "Quickly rejoin the current server",
     callback = function()
         Window:Popup({
             title = "Which one would you like to do?",
@@ -903,21 +928,23 @@ scriptsTab:CreateButton({
 
 scriptsTab:CreateSection({ name = "Utility Scripts" })
 
-scriptsTab:CreateButton({
+local utilityScriptsGroup = scriptsTab:CreateGroup({ direction = "row" })
+
+utilityScriptsGroup:CreateButton({
     name = "Dark Dex++",
     callback = function()
         loadstring(game:HttpGet('https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua'))()
     end,
 })
 
-scriptsTab:CreateButton({
+utilityScriptsGroup:CreateButton({
     name = "UNC Test",
     callback = function()
         loadstring(game:HttpGet("https://obj.wearedevs.net/2/scripts/UNC%20Checker.lua"))()
     end,
 })
 
-scriptsTab:CreateButton({
+utilityScriptsGroup:CreateButton({
     name = "Dark Dex",
     callback = function()
         loadstring(game:HttpGet('https://github.com/OfficiallyMelon/BetterDecompiler/raw/main/dex_betterdecompiler.lua'))()
