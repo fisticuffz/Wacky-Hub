@@ -1,4 +1,11 @@
-# Wacky Hub Is a Script Hub. Has Alot Of Features Like : Fast Proximity Prompts
+# Wacky Hub
+
+A personal Roblox Lua executor script hub by RoboSubZero2.
+
+Two versions are maintained in this repo:
+
+Wacky Hub Rayfield Gen 1 (SOURCE) — legacy version, no longer updated.
+Wacky Hub Rayfield Gen 2 (SOURCE) — actively maintained, gets new features and updates.
 
 
 
