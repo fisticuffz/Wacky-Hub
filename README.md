@@ -1,4 +1,8 @@
-# Wacky Hub Gen 1 / V1 is now a legacy version and will be no longer updated. 
+# Wacky Hub Is a Script Hub. Has Alot Of Features Like : Fast Proximity Prompts
+
+
+
+## Wacky Hub Gen 1 / V1 is now a legacy version and will be no longer updated. 
 loadstring(game:HttpGet('https://raw.githubusercontent.com/fisticuffz/Wacky-Hub/refs/heads/Source/Wacky%20Hub%20Rayfield%20Gen%201%20(SOURCE)'))()
 
 
@@ -14,7 +18,7 @@ Wacky Hub Gen 1's Homepage.
 <img width="495" height="469" alt="image" src="https://github.com/user-attachments/assets/eb908df1-1f17-45af-9f50-3854e3f9d36a" />
 
 
-## Wacky Hub Gen 2 / V2 Is now going to be maintaned and will get more updates.
+### Wacky Hub Gen 2 / V2 Is now going to be maintaned and will get more updates.
 loadstring(game:HttpGet('https://raw.githubusercontent.com/fisticuffz/Wacky-Hub/refs/heads/Source/Wacky%20Hub%20Rayfield%20Gen%202%20(SOURCE)'))()
 
 
