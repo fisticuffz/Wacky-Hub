@@ -1,4 +1,6 @@
-# Wacky Hub Gen 1 / V1 is now a legacy version and will be no longer updated.
+# Wacky Hub Gen 1 / V1 is now a legacy version and will be no longer updated. 
+loadstring(game:HttpGet('https://raw.githubusercontent.com/fisticuffz/Wacky-Hub/refs/heads/Source/Wacky%20Hub%20Rayfield%20Gen%201%20(SOURCE)'))()
+
 
 Wacky Hub Gen 1 Uses 
 
@@ -13,6 +15,8 @@ Wacky Hub Gen 1's Homepage.
 
 
 ## Wacky Hub Gen 2 / V2 Is now going to be maintaned and will get more updates.
+loadstring(game:HttpGet('https://raw.githubusercontent.com/fisticuffz/Wacky-Hub/refs/heads/Source/Wacky%20Hub%20Rayfield%20Gen%202%20(SOURCE)'))()
+
 
 Wacky Hub Gen 2 Uses
 
