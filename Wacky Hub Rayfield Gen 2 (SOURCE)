@@ -223,10 +223,13 @@ if execSuccess and execResult then
     executorName = execResult
 end
 
-homeTab:CreateButton({
+-- Stat's value must be a number, so the executor name goes in prefix instead,
+-- with value/suffix left blank since there's no real number to show here.
+homeTab:CreateStat({
     name = "Executor",
-    description = executorName,
-    callback = function() end,
+    prefix = tostring(executorName),
+    value = 0,
+    suffix = "",
 })
 
 local fpsStat = homeTab:CreateStat({
@@ -266,6 +269,30 @@ homeTab:CreateToggle({
         if not value then
             fpsStat:Set(0)
         end
+    end,
+})
+
+-- Anti-AFK, same trick Infinite Yield uses: on Idled, simulate a click via
+-- VirtualUser so Roblox's idle/kick timer resets without moving your character.
+local antiAfkEnabled = false
+local VirtualUser = game:GetService("VirtualUser")
+
+if getgenv().WackyHubAntiAfkConn then
+    getgenv().WackyHubAntiAfkConn:Disconnect()
+end
+
+getgenv().WackyHubAntiAfkConn = Players.LocalPlayer.Idled:Connect(function()
+    if not antiAfkEnabled then return end
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
+
+homeTab:CreateToggle({
+    name = "Anti-AFK",
+    value = false,
+    flag = "AntiAFKToggle",
+    callback = function(value)
+        antiAfkEnabled = value
     end,
 })
 
@@ -830,10 +857,7 @@ getgenv().WackyHubESPConn = RunService.Heartbeat:Connect(function()
     end
 end)
 
-local espGrid = cameraTab:CreateGroup()
-
-local espLeft = espGrid:CreateGroup({ direction = "column" })
-espLeft:CreateToggle({
+cameraTab:CreateToggle({
     name = "ESP",
     value = false,
     flag = "ESPToggle",
@@ -841,7 +865,8 @@ espLeft:CreateToggle({
         espEnabled = value
     end,
 })
-espLeft:CreateToggle({
+
+cameraTab:CreateToggle({
     name = "Tracers",
     value = false,
     flag = "TracersToggle",
@@ -850,8 +875,7 @@ espLeft:CreateToggle({
     end,
 })
 
-local espRight = espGrid:CreateGroup({ direction = "column" })
-espRight:CreateToggle({
+cameraTab:CreateToggle({
     name = "Team Color ESP",
     value = false,
     flag = "TeamColorToggle",
