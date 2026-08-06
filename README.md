@@ -2,6 +2,7 @@
 
 A Roblox script hub by RoboSubZero2.
 
+
 Two versions are maintained in this repo:
 
 - **Wacky Hub Rayfield Gen 1 (SOURCE)** — legacy version, no longer updated.
@@ -12,6 +13,7 @@ Two versions are maintained in this repo:
 ## Gen 1 (legacy)
 
 Built on the original [Rayfield](https://docs.sirius.menu/rayfield). No longer updated — kept for reference and as a fallback.
+Created On : Jul 12, 2026
 
 **Home**
 - Welcome message + account label
