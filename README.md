@@ -58,6 +58,7 @@ Images
 ## Gen 2 (current)
 
 Built on [Rayfield Gen 2](https://docs.sirius.menu/rayfield-gen2).
+Created On : Jul 23, 2026
 
 **Home**
 - Account — shows your login info; tap it for a toast with your avatar
