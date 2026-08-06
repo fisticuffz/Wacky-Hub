@@ -975,13 +975,6 @@ utilityScriptsGroup:CreateButton({
     end,
 })
 
-utilityScriptsGroup:CreateButton({
-    name = "Cobalt/Remotespy",
-    callback = function()
-       loadstring(game:HttpGet("https://gitlab.com/upio/cobalt/-/releases/permalink/latest/downloads/Cobalt.luau"))()
-    end,
-})
-
 local teleportTab = Window:CreateTab({ name = "Teleportation", icon = 4483362458 })
 
 local function getPlayerNames()
