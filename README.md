@@ -1,5 +1,7 @@
 # Wacky Hub.
+
 Gen 1 / Legacy Version Released On : Jul 12, 2026
+
 Gen 2 / Current Version Released On : Jul 23, 2026
 
 A Roblox script hub by RoboSubZero2.
