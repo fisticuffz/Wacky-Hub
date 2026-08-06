@@ -320,9 +320,9 @@ local localPlayerTab = Window:CreateTab({ name = "Local Player", icon = 44833624
 
 localPlayerTab:CreateSlider({
     name = "Walkspeed Override",
-    range = { 0, 250 },
+    range = { 16, 250 },
     increment = 1,
-    value = 10,
+    value = 16,
     suffix = "Speed",
     flag = "walkspeed",
     callback = function(value)
