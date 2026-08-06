@@ -1,4 +1,8 @@
-# Wacky Hub
+# Wacky Hub.
+
+# Gen 1 / Legacy Version Released On : Jul 12, 2026
+
+# Gen 2 / Current Version Released On : Jul 23, 2026
 
 A Roblox script hub by RoboSubZero2.
 
@@ -13,8 +17,6 @@ Two versions are maintained in this repo:
 ## Gen 1 (legacy)
 
 Built on the original [Rayfield](https://docs.sirius.menu/rayfield). No longer updated — kept for reference and as a fallback.
-
-Created On : Jul 12, 2026
 
 **Home**
 - Welcome message + account label
