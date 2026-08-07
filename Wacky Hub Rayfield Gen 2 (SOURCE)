@@ -30,6 +30,16 @@ Window:Notify({
     duration = 6.5,
 })
 
+Window:Popup({
+    title = "What's new",
+    subtitle = "Version 2.2.1",
+    boxes = {
+        { title = "New Script", description = "Cobalt / Remote Spy.", icon = 93364949241311 },
+        --  { title = "New Script", description = "Cobalt / Remote Spy.", icon = 93364949241311 }, put deez if new update!!!!
+    },
+    options = { { text = "Got it", style = "primary" } },
+})
+
 -- Toast whenever someone joins the server
 Players.PlayerAdded:Connect(function(player)
     Window:Toast({
@@ -193,6 +203,34 @@ homeTab:CreateButton({
     end,
 })
 
+-- Floating top-left ping overlay, separate from the in-UI Ping stat above,
+-- since a Rayfield Stat can't be repositioned outside the window itself.
+local pingOverlayGui = Instance.new("ScreenGui")
+pingOverlayGui.Name = "PingOverlay"
+pingOverlayGui.ResetOnSpawn = false
+pingOverlayGui.Enabled = false
+pingOverlayGui.Parent = getGuiParent()
+
+local pingOverlayLabel = Instance.new("TextLabel")
+pingOverlayLabel.Size = UDim2.new(0, 120, 0, 30)
+pingOverlayLabel.Position = UDim2.new(0, 10, 0, 10)
+pingOverlayLabel.BackgroundTransparency = 0.4
+pingOverlayLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+pingOverlayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+pingOverlayLabel.Font = Enum.Font.GothamBold
+pingOverlayLabel.TextScaled = true
+pingOverlayLabel.Text = "Ping: --ms"
+pingOverlayLabel.Parent = pingOverlayGui
+
+homeTab:CreateToggle({
+    name = "Show Ping Overlay",
+    value = false,
+    flag = "PingOverlayToggle",
+    callback = function(value)
+        pingOverlayGui.Enabled = value
+    end,
+})
+
 if getgenv().WackyHubPingConn then
     getgenv().WackyHubPingConn:Disconnect()
 end
@@ -203,7 +241,9 @@ getgenv().WackyHubPingConn = RunService.Heartbeat:Connect(function()
     end)
 
     if success then
-        pingStat:Set(math.floor(pingValue))
+        local rounded = math.floor(pingValue)
+        pingStat:Set(rounded)
+        pingOverlayLabel.Text = "Ping: " .. rounded .. "ms"
     end
 end)
 
@@ -296,7 +336,7 @@ homeTab:CreateToggle({
     end,
 })
 
-local walkSpeedValue = 10
+local walkSpeedValue = 16
 local jumpHeightValue = 10
 
 -- Disconnect any leftover loop from a previous run of this script before
@@ -974,6 +1014,14 @@ utilityScriptsGroup:CreateButton({
         loadstring(game:HttpGet('https://github.com/OfficiallyMelon/BetterDecompiler/raw/main/dex_betterdecompiler.lua'))()
     end,
 })
+
+utilityScriptsGroup:CreateButton({
+    name = "Cobalt/Remotespy",
+    callback = function()
+        loadstring(game:HttpGet("https://gitlab.com/upio/cobalt/-/releases/permalink/latest/downloads/Cobalt.luau"))()
+    end,
+})
+
 
 local teleportTab = Window:CreateTab({ name = "Teleportation", icon = 4483362458 })
 
