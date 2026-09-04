@@ -32,19 +32,32 @@ Window:Notify({
 
 Window:Popup({
     title = "What's new",
-    subtitle = "Version 2.2.1",
+    subtitle = "Version 2.2.3 (Fixed Esp And Added Toasts And A New Script.)",
     boxes = {
-        { title = "New Script", description = "Cobalt / Remote Spy.", icon = 93364949241311 },
-        --  { title = "New Script", description = "Cobalt / Remote Spy.", icon = 93364949241311 }, put deez if new update!!!!
+        { title = "Added Two New Toasts.", description = "Added a new toast for a friend who joined. And Added A Toast For A Player Left The Server ", icon = 93364949241311 },
+        { title = "Fixed Esp Erroring.", description = "Fixed The Esp error whenever someone respawned where it would error saying Function Update esp when the player died. ", icon = 93364949241311 },
+		 { title = "Added One New Script.", description = "Added a new fun script that puts you into firstperson. ", icon = 93364949241311 },
     },
     options = { { text = "Got it", style = "primary" } },
 })
 
--- Toast whenever someone joins the server
+-- Toast whenever someone joins or leaves the server
 Players.PlayerAdded:Connect(function(player)
+    local isFriend = false
+    pcall(function()
+        isFriend = Players.LocalPlayer:IsFriendsWith(player.UserId)
+    end)
+
     Window:Toast({
-        title = player.DisplayName,
-        subtitle = "joined the server",
+        title = isFriend and "A friend has joined." or "A player has joined.",
+        subtitle = player.DisplayName,
+        avatar = player.UserId,
+    })
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    Window:Toast({
+        title = player.DisplayName .. " left the server.",
         avatar = player.UserId,
     })
 end)
@@ -832,34 +845,40 @@ local function updateESP(player)
         return
     end
 
-    local color = getPlayerColor(player)
-    data.highlight.FillColor = color
-    data.tracer.Color = color
+    local updateSuccess = pcall(function()
+        local color = getPlayerColor(player)
+        data.highlight.FillColor = color
+        data.tracer.Color = color
 
-    data.highlight.Enabled = espEnabled
-    data.billboard.Enabled = espEnabled
+        data.highlight.Enabled = espEnabled
+        data.billboard.Enabled = espEnabled
 
-    local myChar = Players.LocalPlayer.Character
-    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if myHrp then
-        local distance = math.floor((hrp.Position - myHrp.Position).Magnitude)
-        data.nameLabel.Text = player.Name .. " [" .. distance .. "m]"
-    else
-        data.nameLabel.Text = player.Name
-    end
+        local myChar = Players.LocalPlayer.Character
+        local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        if myHrp then
+            local distance = math.floor((hrp.Position - myHrp.Position).Magnitude)
+            data.nameLabel.Text = player.Name .. " [" .. distance .. "m]"
+        else
+            data.nameLabel.Text = player.Name
+        end
 
-    if tracersEnabled then
-        local camera = workspace.CurrentCamera
-        local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
-        if onScreen then
-            data.tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
-            data.tracer.To = Vector2.new(screenPos.X, screenPos.Y)
-            data.tracer.Visible = true
+        if tracersEnabled then
+            local camera = workspace.CurrentCamera
+            local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+            if onScreen then
+                data.tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                data.tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+                data.tracer.Visible = true
+            else
+                data.tracer.Visible = false
+            end
         else
             data.tracer.Visible = false
         end
-    else
-        data.tracer.Visible = false
+    end)
+
+    if not updateSuccess then
+        removeESP(player)
     end
 end
 
@@ -1019,6 +1038,19 @@ utilityScriptsGroup:CreateButton({
     name = "Cobalt/Remotespy",
     callback = function()
         loadstring(game:HttpGet("https://gitlab.com/upio/cobalt/-/releases/permalink/latest/downloads/Cobalt.luau"))()
+    end,
+})
+
+scriptsTab:CreateSection({ name = "Fun Scripts" })
+
+local funScriptsGroup = scriptsTab:CreateGroup({ direction = "row" })
+
+funScriptsGroup:CreateButton({
+    name = "FirstPerson Script",
+    callback = function()
+        game:GetService("RunService").RenderStepped:Connect(function()
+game.Workspace.CurrentCamera.CFrame = (game.Players.LocalPlayer.Character.Head.CFrame)
+end)
     end,
 })
 
