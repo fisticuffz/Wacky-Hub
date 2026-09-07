@@ -2,13 +2,13 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local keybindsEnabled = true
- 
+
 local localPlayer = Players.LocalPlayer
 local accountText = "Logged in as: Unknown"
 if localPlayer then
     accountText = "Logged in as: " .. localPlayer.DisplayName .. " (@" .. localPlayer.Name .. ")"
 end
- 
+
 -- NOTE: Gen2's documented CreateWindow properties are name, subtitle, theme, icon,
 -- showName, showIcon, configuration, locale, translations, translator, fallbackFont.
 -- Discord/KeySystem/ScriptID from Gen1 aren't part of that list, so they're dropped here.
@@ -23,13 +23,13 @@ local Window = Rayfield:CreateWindow({
         fileName = "Wacky Hub",
     },
 })
- 
+
 Window:Notify({
     title = "Hai :)",
     content = "Script Has Loaded",
     duration = 6.5,
 })
- 
+
 Window:Popup({
     title = "What's new",
     subtitle = "Version 2.2.3 (Fixed Esp And Added Toasts And A New Script.)",
@@ -40,32 +40,32 @@ Window:Popup({
     },
     options = { { text = "Got it", style = "primary" } },
 })
- 
+
 -- Toast whenever someone joins or leaves the server
 Players.PlayerAdded:Connect(function(player)
     local isFriend = false
     pcall(function()
         isFriend = Players.LocalPlayer:IsFriendsWith(player.UserId)
     end)
- 
+
     Window:Toast({
         title = isFriend and "A friend has joined." or "A player has joined.",
         subtitle = player.DisplayName,
         avatar = player.UserId,
     })
 end)
- 
+
 Players.PlayerRemoving:Connect(function(player)
     Window:Toast({
         title = player.DisplayName .. " left the server.",
         avatar = player.UserId,
     })
 end)
- 
+
 local homeTab = Window:CreateTab({ name = "Home", icon = 4483362458 })
- 
+
 homeTab:CreateSection({ name = "Welcome to Wacky Hub" })
- 
+
 homeTab:CreateButton({
     name = "Account",
     description = accountText,
@@ -77,10 +77,10 @@ homeTab:CreateButton({
         })
     end,
 })
- 
+
 local profilePicGui = nil
 local profilePicVisible = false
- 
+
 local function getGuiParent()
     if gethui then
         return gethui()
@@ -88,10 +88,10 @@ local function getGuiParent()
         return Players.LocalPlayer:WaitForChild("PlayerGui")
     end
 end
- 
+
 local function createProfilePicGui()
     if profilePicGui then return end
- 
+
     local success, thumbnail = pcall(function()
         return Players:GetUserThumbnailAsync(
             Players.LocalPlayer.UserId,
@@ -99,31 +99,31 @@ local function createProfilePicGui()
             Enum.ThumbnailSize.Size420x420
         )
     end)
- 
+
     if not success then
         warn("Failed to get thumbnail")
         return
     end
- 
+
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "ProfilePicDisplay"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.Enabled = false
     ScreenGui.Parent = getGuiParent()
- 
+
     local Frame = Instance.new("Frame")
     Frame.Size = UDim2.new(0, 150, 0, 190)
     Frame.Position = UDim2.new(0.5, -75, 0, 20)
     Frame.BackgroundTransparency = 1
     Frame.Parent = ScreenGui
- 
+
     local ProfilePic = Instance.new("ImageLabel")
     ProfilePic.Size = UDim2.new(0, 150, 0, 150)
     ProfilePic.Position = UDim2.new(0, 0, 0, 0)
     ProfilePic.Image = thumbnail
     ProfilePic.BackgroundTransparency = 1
     ProfilePic.Parent = Frame
- 
+
     local NameLabel = Instance.new("TextLabel")
     NameLabel.Size = UDim2.new(1, 0, 0, 30)
     NameLabel.Position = UDim2.new(0, 0, 0, 155)
@@ -134,10 +134,10 @@ local function createProfilePicGui()
     NameLabel.Font = Enum.Font.GothamBold
     NameLabel.TextScaled = true
     NameLabel.Parent = Frame
- 
+
     profilePicGui = ScreenGui
 end
- 
+
 homeTab:CreateToggle({
     name = "Show Profile Picture",
     value = false,
@@ -156,7 +156,7 @@ homeTab:CreateToggle({
         end
     end,
 })
- 
+
 homeTab:CreateButton({
     name = "Destroy UI",
     callback = function()
@@ -169,6 +169,21 @@ homeTab:CreateButton({
                     text = "Yes, Destroy",
                     style = "danger",
                     callback = function()
+                        -- Stop the persistent Walkspeed/JumpHeight loop and reset
+                        -- to Roblox defaults, otherwise it keeps forcing your last
+                        -- slider values forever even after the UI is gone.
+                        if getgenv().WackyHubWalkJumpConn then
+                            getgenv().WackyHubWalkJumpConn:Disconnect()
+                            getgenv().WackyHubWalkJumpConn = nil
+                        end
+
+                        local char = Players.LocalPlayer.Character
+                        local hum = char and char:FindFirstChild("Humanoid")
+                        if hum then
+                            hum.WalkSpeed = 16
+                            hum.JumpHeight = 7.2
+                        end
+
                         Window:Unload()
                     end
                 },
@@ -176,17 +191,17 @@ homeTab:CreateButton({
         })
     end,
 })
- 
+
 homeTab:CreateSection({ name = "Server Info" })
- 
+
 local StatsService = game:GetService("Stats")
- 
+
 local pingStat = homeTab:CreateStat({
     name = "Ping",
     value = 0,
     suffix = "ms",
 })
- 
+
 homeTab:CreateButton({
     name = "Server Info",
     description = "View current server details",
@@ -215,7 +230,7 @@ homeTab:CreateButton({
         })
     end,
 })
- 
+
 -- Floating top-left ping overlay, separate from the in-UI Ping stat above,
 -- since a Rayfield Stat can't be repositioned outside the window itself.
 local pingOverlayGui = Instance.new("ScreenGui")
@@ -223,7 +238,7 @@ pingOverlayGui.Name = "PingOverlay"
 pingOverlayGui.ResetOnSpawn = false
 pingOverlayGui.Enabled = false
 pingOverlayGui.Parent = getGuiParent()
- 
+
 local pingOverlayLabel = Instance.new("TextLabel")
 pingOverlayLabel.Size = UDim2.new(0, 120, 0, 30)
 pingOverlayLabel.Position = UDim2.new(0, 10, 0, 10)
@@ -234,7 +249,7 @@ pingOverlayLabel.Font = Enum.Font.GothamBold
 pingOverlayLabel.TextScaled = true
 pingOverlayLabel.Text = "Ping: --ms"
 pingOverlayLabel.Parent = pingOverlayGui
- 
+
 homeTab:CreateToggle({
     name = "Show Ping Overlay",
     value = false,
@@ -243,25 +258,25 @@ homeTab:CreateToggle({
         pingOverlayGui.Enabled = value
     end,
 })
- 
+
 if getgenv().WackyHubPingConn then
     getgenv().WackyHubPingConn:Disconnect()
 end
- 
+
 getgenv().WackyHubPingConn = RunService.Heartbeat:Connect(function()
     local success, pingValue = pcall(function()
         return StatsService.Network.ServerStatsItem["Data Ping"]:GetValue()
     end)
- 
+
     if success then
         local rounded = math.floor(pingValue)
         pingStat:Set(rounded)
         pingOverlayLabel.Text = "Ping: " .. rounded .. "ms"
     end
 end)
- 
+
 homeTab:CreateSection({ name = "Interface" })
- 
+
 local executorName = "Unknown"
 local execSuccess, execResult = pcall(function()
     if identifyexecutor then
@@ -271,11 +286,11 @@ local execSuccess, execResult = pcall(function()
     end
     return "Unknown"
 end)
- 
+
 if execSuccess and execResult then
     executorName = execResult
 end
- 
+
 -- Stat's value must be a number, so the executor name goes in prefix instead,
 -- with value/suffix left blank since there's no real number to show here.
 homeTab:CreateStat({
@@ -284,33 +299,33 @@ homeTab:CreateStat({
     value = 0,
     suffix = "",
 })
- 
+
 local fpsStat = homeTab:CreateStat({
     name = "FPS",
     value = 0,
 })
- 
+
 local fpsCounterEnabled = false
 local fpsFrameCount = 0
 local fpsElapsed = 0
- 
+
 if getgenv().WackyHubFpsConn then
     getgenv().WackyHubFpsConn:Disconnect()
 end
- 
+
 getgenv().WackyHubFpsConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not fpsCounterEnabled then return end
- 
+
     fpsFrameCount += 1
     fpsElapsed += deltaTime
- 
+
     if fpsElapsed >= 1 then
         fpsStat:Set(math.floor(fpsFrameCount / fpsElapsed))
         fpsFrameCount = 0
         fpsElapsed = 0
     end
 end)
- 
+
 homeTab:CreateToggle({
     name = "Show FPS Counter",
     value = false,
@@ -324,22 +339,22 @@ homeTab:CreateToggle({
         end
     end,
 })
- 
+
 -- Anti-AFK, same trick Infinite Yield uses: on Idled, simulate a click via
 -- VirtualUser so Roblox's idle/kick timer resets without moving your character.
 local antiAfkEnabled = false
 local VirtualUser = game:GetService("VirtualUser")
- 
+
 if getgenv().WackyHubAntiAfkConn then
     getgenv().WackyHubAntiAfkConn:Disconnect()
 end
- 
+
 getgenv().WackyHubAntiAfkConn = Players.LocalPlayer.Idled:Connect(function()
     if not antiAfkEnabled then return end
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
 end)
- 
+
 homeTab:CreateToggle({
     name = "Anti-AFK",
     value = false,
@@ -348,17 +363,17 @@ homeTab:CreateToggle({
         antiAfkEnabled = value
     end,
 })
- 
+
 local walkSpeedValue = 16
 local jumpHeightValue = 10
- 
+
 -- Disconnect any leftover loop from a previous run of this script before
 -- starting a new one, or re-executing without a full server rejoin leaves
 -- the old loop fighting the new one over WalkSpeed/JumpHeight forever.
 if getgenv().WackyHubWalkJumpConn then
     getgenv().WackyHubWalkJumpConn:Disconnect()
 end
- 
+
 getgenv().WackyHubWalkJumpConn = RunService.Heartbeat:Connect(function()
     local char = Players.LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
@@ -367,10 +382,10 @@ getgenv().WackyHubWalkJumpConn = RunService.Heartbeat:Connect(function()
         hum.JumpHeight = jumpHeightValue
     end
 end)
- 
- 
+
+
 local localPlayerTab = Window:CreateTab({ name = "Local Player", icon = 4483362458 })
- 
+
 localPlayerTab:CreateSlider({
     name = "Walkspeed Override",
     range = { 16, 250 },
@@ -382,7 +397,7 @@ localPlayerTab:CreateSlider({
         walkSpeedValue = value
     end,
 })
- 
+
 localPlayerTab:CreateSlider({
     name = "Jump Power Override",
     range = { 0, 250 },
@@ -394,7 +409,7 @@ localPlayerTab:CreateSlider({
         jumpHeightValue = value
     end,
 })
- 
+
 localPlayerTab:CreateSlider({
     name = "Gravity Override",
     range = { 0, 500 },
@@ -406,12 +421,12 @@ localPlayerTab:CreateSlider({
         game.workspace.Gravity = value
     end,
 })
- 
+
 local ProximityPromptService = game:GetService("ProximityPromptService")
- 
+
 local instantPromptsEnabled = false
 local originalHoldDurations = {}
- 
+
 ProximityPromptService.PromptShown:Connect(function(prompt, inputType)
     print("PromptShown fired:", prompt.Name, "| Parent:", prompt.Parent and prompt.Parent.Name or "nil", "| HoldDuration:", prompt.HoldDuration)
     if not instantPromptsEnabled then return end
@@ -420,14 +435,14 @@ ProximityPromptService.PromptShown:Connect(function(prompt, inputType)
     end
     prompt.HoldDuration = 0.1
 end)
- 
+
 ProximityPromptService.PromptHidden:Connect(function(prompt)
     if originalHoldDurations[prompt] then
         prompt.HoldDuration = originalHoldDurations[prompt]
         originalHoldDurations[prompt] = nil
     end
 end)
- 
+
 localPlayerTab:CreateToggle({
     name = "Fast Proximity Prompts",
     value = false,
@@ -436,55 +451,55 @@ localPlayerTab:CreateToggle({
         instantPromptsEnabled = value
     end,
 })
- 
- 
+
+
 -- Fly variables
 local flying = false
 local flySpeed = 50
 local bodyVelocity
 local bodyGyro
 local flyConnection
- 
+
 local function startFly()
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
     if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
- 
+
     local player = Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart", 5)
     local hum = char:WaitForChild("Humanoid", 5)
- 
+
     if not hrp or not hum then
         warn("Fly failed: character parts not found")
         return
     end
- 
+
     hum.PlatformStand = true
- 
+
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = hrp
- 
+
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
     bodyGyro.P = 10000
     bodyGyro.Parent = hrp
- 
+
     local UserInputService = game:GetService("UserInputService")
- 
+
     flyConnection = RunService.RenderStepped:Connect(function()
         local cam = workspace.CurrentCamera
         local moveDir = Vector3.new(0, 0, 0)
- 
+
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += cam.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir -= Vector3.new(0, 1, 0) end
- 
+
         if moveDir.Magnitude > 0 then
             bodyVelocity.Velocity = moveDir.Unit * flySpeed
         else
@@ -493,7 +508,7 @@ local function startFly()
         bodyGyro.CFrame = cam.CFrame
     end)
 end
- 
+
 local function stopFly()
     local char = Players.LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
@@ -502,7 +517,7 @@ local function stopFly()
     if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
 end
- 
+
 local flyToggle = localPlayerTab:CreateToggle({
     name = "Fly",
     value = false,
@@ -516,7 +531,7 @@ local flyToggle = localPlayerTab:CreateToggle({
         end
     end,
 })
- 
+
 -- Gen2 keybinds fire cleanly once per press, so no debounce/guard flags needed here.
 -- flyToggle:Set(flying, true) updates the switch's visuals without re-firing its callback.
 localPlayerTab:CreateKeybind({
@@ -529,7 +544,7 @@ localPlayerTab:CreateKeybind({
         flyToggle:Set(flying, true)
     end,
 })
- 
+
 localPlayerTab:CreateSlider({
     name = "Fly Speed",
     range = { 10, 300 },
@@ -541,43 +556,43 @@ localPlayerTab:CreateSlider({
         flySpeed = value
     end,
 })
- 
+
 local antiFlingEnabled = false
 local maxVelocity = 100
 local antiFlingConnection
 local lastSafePosition = nil
 local maxDistancePerFrame = 15
- 
+
 local function startAntiFling()
     local char = Players.LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if hrp then lastSafePosition = hrp.Position end
- 
+
     antiFlingConnection = RunService.Heartbeat:Connect(function(deltaTime)
         local c = Players.LocalPlayer.Character
         local h = c and c:FindFirstChild("HumanoidRootPart")
         if not h then return end
- 
+
         if lastSafePosition then
             local distanceMoved = (h.Position - lastSafePosition).Magnitude
             local allowedDistance = maxDistancePerFrame + (maxVelocity * deltaTime)
- 
+
             if distanceMoved > allowedDistance then
                 h.CFrame = CFrame.new(lastSafePosition)
                 h.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 h.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
         end
- 
+
         local velocity = h.AssemblyLinearVelocity
         if velocity.Magnitude > maxVelocity then
             h.AssemblyLinearVelocity = velocity.Unit * maxVelocity
         end
- 
+
         lastSafePosition = h.Position
     end)
 end
- 
+
 local function stopAntiFling()
     if antiFlingConnection then
         antiFlingConnection:Disconnect()
@@ -585,7 +600,7 @@ local function stopAntiFling()
     end
     lastSafePosition = nil
 end
- 
+
 localPlayerTab:CreateToggle({
     name = "Anti-Fling",
     value = false,
@@ -599,7 +614,7 @@ localPlayerTab:CreateToggle({
         end
     end,
 })
- 
+
 localPlayerTab:CreateSlider({
     name = "Max Velocity",
     range = { 20, 300 },
@@ -611,10 +626,10 @@ localPlayerTab:CreateSlider({
         maxVelocity = value
     end,
 })
- 
+
 local cameraTab = localPlayerTab
 cameraTab:CreateSection({ name = "Camera" })
- 
+
 cameraTab:CreateSlider({
     name = "FOV Changer",
     range = { 0, 120 },
@@ -629,36 +644,36 @@ cameraTab:CreateSlider({
         end
     end,
 })
- 
+
 local UserInputService = game:GetService("UserInputService")
- 
+
 local freecamOn = false
 local freecamSpeed = 50
 local savedCameraType
- 
+
 local camYaw = 0
 local camPitch = 0
 local mouseSensitivity = 0.002
 local rightMouseDown = false
- 
+
 local currentVelocity = Vector3.new(0, 0, 0)
 local smoothingFactor = 8
- 
+
 local function toggleFreecam(enabled)
     local camera = workspace.CurrentCamera
     local char = Players.LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
- 
+
     if enabled then
         savedCameraType = camera.CameraType
- 
+
         local lookVector = camera.CFrame.LookVector
         camYaw = math.atan2(-lookVector.X, -lookVector.Z)
         camPitch = math.asin(lookVector.Y)
- 
+
         camera.CameraType = Enum.CameraType.Scriptable
         currentVelocity = Vector3.new(0, 0, 0)
- 
+
         if hrp then
             hrp.Anchored = true
         end
@@ -671,7 +686,7 @@ local function toggleFreecam(enabled)
         rightMouseDown = false
     end
 end
- 
+
 UserInputService.InputBegan:Connect(function(input)
     if not freecamOn then return end
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -679,7 +694,7 @@ UserInputService.InputBegan:Connect(function(input)
         UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
     end
 end)
- 
+
 UserInputService.InputEnded:Connect(function(input)
     if not freecamOn then return end
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -687,20 +702,20 @@ UserInputService.InputEnded:Connect(function(input)
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
     end
 end)
- 
+
 RunService:BindToRenderStep("FreecamUpdate", Enum.RenderPriority.Camera.Value + 1, function(deltaTime)
     if not freecamOn then return end
     local camera = workspace.CurrentCamera
- 
+
     if rightMouseDown then
         local delta = UserInputService:GetMouseDelta()
         camYaw = camYaw - (delta.X * mouseSensitivity)
         camPitch = camPitch - (delta.Y * mouseSensitivity)
         camPitch = math.clamp(camPitch, -math.rad(89), math.rad(89))
     end
- 
+
     local rotationCFrame = CFrame.fromOrientation(camPitch, camYaw, 0)
- 
+
     local moveDir = Vector3.new(0, 0, 0)
     if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += rotationCFrame.LookVector end
     if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= rotationCFrame.LookVector end
@@ -708,19 +723,19 @@ RunService:BindToRenderStep("FreecamUpdate", Enum.RenderPriority.Camera.Value + 
     if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += rotationCFrame.RightVector end
     if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
     if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir -= Vector3.new(0, 1, 0) end
- 
+
     local targetVelocity = Vector3.new(0, 0, 0)
     if moveDir.Magnitude > 0 then
         targetVelocity = moveDir.Unit * freecamSpeed
     end
- 
+
     local alpha = 1 - math.exp(-smoothingFactor * deltaTime)
     currentVelocity = currentVelocity:Lerp(targetVelocity, alpha)
- 
+
     local newPosition = camera.CFrame.Position + currentVelocity * deltaTime
     camera.CFrame = CFrame.new(newPosition) * rotationCFrame
 end)
- 
+
 local freecamToggle = cameraTab:CreateToggle({
     name = "Freecam",
     value = false,
@@ -730,7 +745,7 @@ local freecamToggle = cameraTab:CreateToggle({
         toggleFreecam(value)
     end,
 })
- 
+
 cameraTab:CreateKeybind({
     name = "Freecam Keybind",
     value = Enum.KeyCode.C,
@@ -741,7 +756,7 @@ cameraTab:CreateKeybind({
         freecamToggle:Set(freecamOn, true)
     end,
 })
- 
+
 cameraTab:CreateSlider({
     name = "Freecam Speed",
     range = { 10, 300 },
@@ -753,21 +768,21 @@ cameraTab:CreateSlider({
         freecamSpeed = value
     end,
 })
- 
+
 cameraTab:CreateSection({ name = "ESP" })
- 
+
 local espEnabled = false
 local tracersEnabled = false
 local teamColorEnabled = false
 local espObjects = {}
- 
+
 local function getPlayerColor(player)
     if teamColorEnabled and player.Team then
         return player.Team.TeamColor.Color
     end
     return Color3.fromRGB(255, 0, 0)
 end
- 
+
 local function removeESP(player)
     local data = espObjects[player]
     if data then
@@ -777,22 +792,22 @@ local function removeESP(player)
         espObjects[player] = nil
     end
 end
- 
+
 local function createESP(player)
     removeESP(player)
- 
+
     local highlight = Instance.new("Highlight")
     highlight.FillColor = getPlayerColor(player)
     highlight.FillTransparency = 0.5
     highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
     highlight.OutlineTransparency = 0
     highlight.Enabled = false
- 
+
     local billboard = Instance.new("BillboardGui")
     billboard.Size = UDim2.new(0, 200, 0, 50)
     billboard.AlwaysOnTop = true
     billboard.Enabled = false
- 
+
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(1, 0, 1, 0)
     nameLabel.BackgroundTransparency = 1
@@ -802,12 +817,12 @@ local function createESP(player)
     nameLabel.TextScaled = true
     nameLabel.Text = player.Name
     nameLabel.Parent = billboard
- 
+
     local tracer = Drawing.new("Line")
     tracer.Thickness = 1.5
     tracer.Color = getPlayerColor(player)
     tracer.Visible = false
- 
+
     espObjects[player] = {
         highlight = highlight,
         billboard = billboard,
@@ -815,14 +830,14 @@ local function createESP(player)
         tracer = tracer,
     }
 end
- 
+
 local function updateESP(player)
     local data = espObjects[player]
     if not data then return end
- 
+
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
- 
+
     if not hrp or not char then
         pcall(function()
             data.highlight.Enabled = false
@@ -831,7 +846,7 @@ local function updateESP(player)
         end)
         return
     end
- 
+
     local success = pcall(function()
         if data.highlight.Parent ~= char then data.highlight.Parent = char end
         if data.billboard.Parent ~= hrp then
@@ -839,20 +854,20 @@ local function updateESP(player)
             data.billboard.StudsOffset = Vector3.new(0, 3, 0)
         end
     end)
- 
+
     if not success then
         createESP(player)
         return
     end
- 
+
     local updateSuccess = pcall(function()
         local color = getPlayerColor(player)
         data.highlight.FillColor = color
         data.tracer.Color = color
- 
+
         data.highlight.Enabled = espEnabled
         data.billboard.Enabled = espEnabled
- 
+
         local myChar = Players.LocalPlayer.Character
         local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
         if myHrp then
@@ -861,7 +876,7 @@ local function updateESP(player)
         else
             data.nameLabel.Text = player.Name
         end
- 
+
         if tracersEnabled then
             local camera = workspace.CurrentCamera
             local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
@@ -876,12 +891,12 @@ local function updateESP(player)
             data.tracer.Visible = false
         end
     end)
- 
+
     if not updateSuccess then
         removeESP(player)
     end
 end
- 
+
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= Players.LocalPlayer then
         createESP(player)
@@ -891,7 +906,7 @@ for _, player in ipairs(Players:GetPlayers()) do
         end)
     end
 end
- 
+
 Players.PlayerAdded:Connect(function(player)
     if player ~= Players.LocalPlayer then
         createESP(player)
@@ -901,21 +916,21 @@ Players.PlayerAdded:Connect(function(player)
         end)
     end
 end)
- 
+
 Players.PlayerRemoving:Connect(function(player)
     removeESP(player)
 end)
- 
+
 if getgenv().WackyHubESPConn then
     getgenv().WackyHubESPConn:Disconnect()
 end
- 
+
 getgenv().WackyHubESPConn = RunService.Heartbeat:Connect(function()
     for player, _ in pairs(espObjects) do
         updateESP(player)
     end
 end)
- 
+
 cameraTab:CreateToggle({
     name = "ESP",
     value = false,
@@ -924,7 +939,7 @@ cameraTab:CreateToggle({
         espEnabled = value
     end,
 })
- 
+
 cameraTab:CreateToggle({
     name = "Tracers",
     value = false,
@@ -933,7 +948,7 @@ cameraTab:CreateToggle({
         tracersEnabled = value
     end,
 })
- 
+
 cameraTab:CreateToggle({
     name = "Team Color ESP",
     value = false,
@@ -942,27 +957,27 @@ cameraTab:CreateToggle({
         teamColorEnabled = value
     end,
 })
- 
+
 local scriptsTab = Window:CreateTab({ name = "Scripts", icon = 4483362458 })
- 
+
 local topScriptsGroup = scriptsTab:CreateGroup({ direction = "row" })
- 
+
 topScriptsGroup:CreateButton({
     name = "Infinity Yield",
     callback = function()
         loadstring(game:HttpGet('https://raw.githubusercontent.com/edgeiy/infiniteyield/master/source'))()
     end,
 })
- 
+
 topScriptsGroup:CreateButton({
     name = "Better Save Instance",
     callback = function()
         loadstring(game:HttpGet('https://raw.githubusercontent.com/ZentosDevOFF/SynSaveInstance-/main/ssi%2B%2B.lua'))()
     end,
 })
- 
+
 scriptsTab:CreateSection({ name = "Rejoin Server / Server Hop" })
- 
+
 scriptsTab:CreateButton({
     name = "Rejoin Server",
     description = "Quickly rejoin the current server",
@@ -978,9 +993,9 @@ scriptsTab:CreateButton({
                     callback = function()
                         local TeleportService = game:GetService("TeleportService")
                         local LocalPlayer = Players.LocalPlayer
- 
+
                         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
- 
+
                         Window:Notify({
                             title = "Rejoining...",
                             content = "You are being teleported back to the server.",
@@ -994,9 +1009,9 @@ scriptsTab:CreateButton({
                     callback = function()
                         local TeleportService = game:GetService("TeleportService")
                         local LocalPlayer = Players.LocalPlayer
- 
+
                         TeleportService:Teleport(game.PlaceId, LocalPlayer)
- 
+
                         Window:Notify({
                             title = "Hopping...",
                             content = "You are being teleported to another server.",
@@ -1008,50 +1023,50 @@ scriptsTab:CreateButton({
         })
     end,
 })
- 
+
 scriptsTab:CreateSection({ name = "Utility Scripts" })
- 
+
 local utilityScriptsGroup = scriptsTab:CreateGroup({ direction = "row" })
- 
+
 utilityScriptsGroup:CreateButton({
     name = "Dark Dex++",
     callback = function()
         loadstring(game:HttpGet('https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua'))()
     end,
 })
- 
+
 utilityScriptsGroup:CreateButton({
     name = "UNC Test",
     callback = function()
         loadstring(game:HttpGet("https://obj.wearedevs.net/2/scripts/UNC%20Checker.lua"))()
     end,
 })
- 
+
 utilityScriptsGroup:CreateButton({
     name = "Dark Dex",
     callback = function()
         loadstring(game:HttpGet('https://github.com/OfficiallyMelon/BetterDecompiler/raw/main/dex_betterdecompiler.lua'))()
     end,
 })
- 
+
 utilityScriptsGroup:CreateButton({
     name = "Cobalt/Remotespy",
     callback = function()
         loadstring(game:HttpGet("https://gitlab.com/upio/cobalt/-/releases/permalink/latest/downloads/Cobalt.luau"))()
     end,
 })
- 
+
 scriptsTab:CreateSection({ name = "Fun Scripts" })
- 
+
 -- Built as a toggle rather than a plain button: a button would stack a new
 -- RenderStepped connection every click (never disconnecting) and give no way
 -- to turn it back off, same bug we fixed for the Walkspeed/Ping/ESP loops.
 local firstPersonEnabled = false
- 
+
 if getgenv().WackyHubFirstPersonConn then
     getgenv().WackyHubFirstPersonConn:Disconnect()
 end
- 
+
 getgenv().WackyHubFirstPersonConn = RunService.RenderStepped:Connect(function()
     if not firstPersonEnabled then return end
     local char = Players.LocalPlayer.Character
@@ -1060,7 +1075,7 @@ getgenv().WackyHubFirstPersonConn = RunService.RenderStepped:Connect(function()
         workspace.CurrentCamera.CFrame = head.CFrame
     end
 end)
- 
+
 scriptsTab:CreateToggle({
     name = "FirstPerson Script",
     value = false,
@@ -1069,10 +1084,10 @@ scriptsTab:CreateToggle({
         firstPersonEnabled = value
     end,
 })
- 
- 
+
+
 local teleportTab = Window:CreateTab({ name = "Teleportation", icon = 4483362458 })
- 
+
 local function getPlayerNames()
     local names = {}
     for _, plr in ipairs(Players:GetPlayers()) do
@@ -1082,9 +1097,9 @@ local function getPlayerNames()
     end
     return names
 end
- 
+
 local selectedPlayer = nil
- 
+
 -- Gen2 dropdown callback returns a plain string in single-select mode (not a table)
 local teleportDropdown = teleportTab:CreateDropdown({
     name = "Select Player",
@@ -1094,7 +1109,7 @@ local teleportDropdown = teleportTab:CreateDropdown({
         selectedPlayer = selected
     end,
 })
- 
+
 teleportTab:CreateButton({
     name = "Teleport to Player",
     callback = function()
@@ -1110,18 +1125,18 @@ teleportTab:CreateButton({
         end
     end,
 })
- 
+
 Players.PlayerAdded:Connect(function()
     teleportDropdown:Refresh(getPlayerNames())
 end)
 Players.PlayerRemoving:Connect(function()
     teleportDropdown:Refresh(getPlayerNames())
 end)
- 
- 
- 
+
+
+
 local settingsTab = Window:CreateTab({ name = "Settings", icon = 4483362458 })
- 
+
 settingsTab:CreateToggle({
     name = "Enable Keybinds",
     value = true,
@@ -1130,14 +1145,14 @@ settingsTab:CreateToggle({
         keybindsEnabled = value
     end,
 })
- 
+
 settingsTab:CreateSection({ name = "Fun" })
- 
+
 local function createExplosion(part)
     if not part then return end
- 
+
     local position = part.Position
- 
+
     local explosion = Instance.new("Explosion")
     explosion.Position = position
     explosion.BlastRadius = 0
@@ -1145,10 +1160,10 @@ local function createExplosion(part)
     explosion.DestroyJointRadiusPercent = 0
     explosion.Visible = true
     explosion.Parent = workspace
- 
+
     local attachment = Instance.new("Attachment")
     attachment.Parent = part
- 
+
     local particles = Instance.new("ParticleEmitter")
     particles.Texture = "rbxasset://textures/particles/fire_main.dds"
     particles.Lifetime = NumberRange.new(0.3, 0.6)
@@ -1164,9 +1179,9 @@ local function createExplosion(part)
         NumberSequenceKeypoint.new(1, 1),
     })
     particles.Parent = attachment
- 
+
     particles:Emit(40)
- 
+
     local camera = workspace.CurrentCamera
     local myChar = Players.LocalPlayer.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
@@ -1188,12 +1203,12 @@ local function createExplosion(part)
             end)
         end
     end
- 
+
     task.delay(1, function()
         attachment:Destroy()
     end)
 end
- 
+
 settingsTab:CreateButton({
     name = "Explode Selected Part",
     callback = function()
