@@ -36,7 +36,7 @@ Window:Popup({
     boxes = {
         { title = "Added Two New Toasts.", description = "Added a new toast for a friend who joined. And Added A Toast For A Player Left The Server ", icon = 93364949241311 },
         { title = "Fixed Esp Erroring.", description = "Fixed The Esp error whenever someone respawned where it would error saying Function Update esp when the player died. ", icon = 93364949241311 },
-		 { title = "Added One New Script.", description = "Added a new fun script that puts you into firstperson. ", icon = 93364949241311 },
+        { title = "Added One New Script.", description = "Added a new fun script that puts you into firstperson. ", icon = 93364949241311 },
     },
     options = { { text = "Got it", style = "primary" } },
 })
@@ -1043,14 +1043,30 @@ utilityScriptsGroup:CreateButton({
 
 scriptsTab:CreateSection({ name = "Fun Scripts" })
 
-local funScriptsGroup = scriptsTab:CreateGroup({ direction = "row" })
+-- Built as a toggle rather than a plain button: a button would stack a new
+-- RenderStepped connection every click (never disconnecting) and give no way
+-- to turn it back off, same bug we fixed for the Walkspeed/Ping/ESP loops.
+local firstPersonEnabled = false
 
-funScriptsGroup:CreateButton({
-    name = "FirstPerson Script",
-    callback = function()
-        game:GetService("RunService").RenderStepped:Connect(function()
-game.Workspace.CurrentCamera.CFrame = (game.Players.LocalPlayer.Character.Head.CFrame)
+if getgenv().WackyHubFirstPersonConn then
+    getgenv().WackyHubFirstPersonConn:Disconnect()
+end
+
+getgenv().WackyHubFirstPersonConn = RunService.RenderStepped:Connect(function()
+    if not firstPersonEnabled then return end
+    local char = Players.LocalPlayer.Character
+    local head = char and char:FindFirstChild("Head")
+    if head then
+        workspace.CurrentCamera.CFrame = head.CFrame
+    end
 end)
+
+scriptsTab:CreateToggle({
+    name = "FirstPerson Script",
+    value = false,
+    flag = "FirstPersonScriptToggle",
+    callback = function(value)
+        firstPersonEnabled = value
     end,
 })
 
