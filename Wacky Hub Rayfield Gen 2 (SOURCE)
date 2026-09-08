@@ -32,11 +32,11 @@ Window:Notify({
 
 Window:Popup({
     title = "What's new",
-    subtitle = "Version 2.2.3 (Fixed Esp And Added Toasts And A New Script.)",
+    subtitle = "Version 2.5.3 (Noclip, Lighting Tab, And Toggleable Movement.)",
     boxes = {
-        { title = "Added Two New Toasts.", description = "Added a new toast for a friend who joined. And Added A Toast For A Player Left The Server ", icon = 93364949241311 },
-        { title = "Fixed Esp Erroring.", description = "Fixed The Esp error whenever someone respawned where it would error saying Function Update esp when the player died. ", icon = 93364949241311 },
-        { title = "Added One New Script.", description = "Added a new fun script that puts you into firstperson. ", icon = 93364949241311 },
+        { title = "Added Noclip.", description = "Added noclip back, using a smoother CanCollide loop. Comes with a keybind (N) to toggle it.", icon = 93364949241311 },
+        { title = "Added A Lighting Tab.", description = "Full Bright and No Fog toggles now live in their own Lighting tab.", icon = 93364949241311 },
+        { title = "Walkspeed & Jump Power Are Toggleable.", description = "Both now have their own enable toggle, and reset to default automatically if you Destroy UI.", icon = 93364949241311 },
     },
     options = { { text = "Got it", style = "primary" } },
 })
