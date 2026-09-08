@@ -30,6 +30,7 @@ Built on the original [Rayfield](https://docs.sirius.menu/rayfield). No longer u
 - Gravity Override
 - Fast Proximity Prompts
 - Fly — toggle or `F` keybind, with a Fly Speed slider
+- Noclip — Toggle or `N` keybind.
 - Anti-Fling — toggle with a Max Velocity slider
 
 **Camera**
@@ -42,6 +43,11 @@ Built on the original [Rayfield](https://docs.sirius.menu/rayfield). No longer u
 - Better Save Instance
 - Rejoin Same Server / Join New Server buttons
 - *Utility Scripts:* Dark Dex++, UNC Test, Dark Dex
+- _Fun Scripts:_ First Person Toggle
+
+**Lighting** 
+- Fullbright
+- Disable / No Fog
 
 **Teleportation**
 - Select Player dropdown + Teleport to Player (auto-refreshes as players join/leave)
