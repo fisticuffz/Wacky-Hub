@@ -366,6 +366,8 @@ homeTab:CreateToggle({
 
 local walkSpeedValue = 16
 local jumpHeightValue = 10
+local walkSpeedOverrideEnabled = false
+local jumpHeightOverrideEnabled = false
 
 -- Disconnect any leftover loop from a previous run of this script before
 -- starting a new one, or re-executing without a full server rejoin leaves
@@ -378,16 +380,34 @@ getgenv().WackyHubWalkJumpConn = RunService.Heartbeat:Connect(function()
     local char = Players.LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
     if hum then
-        hum.WalkSpeed = walkSpeedValue
-        hum.JumpHeight = jumpHeightValue
+        if walkSpeedOverrideEnabled then
+            hum.WalkSpeed = walkSpeedValue
+        end
+        if jumpHeightOverrideEnabled then
+            hum.JumpHeight = jumpHeightValue
+        end
     end
 end)
 
 
 local localPlayerTab = Window:CreateTab({ name = "Local Player", icon = 4483362458 })
 
-localPlayerTab:CreateSlider({
+localPlayerTab:CreateToggle({
     name = "Walkspeed Override",
+    value = false,
+    flag = "WalkspeedOverrideToggle",
+    callback = function(value)
+        walkSpeedOverrideEnabled = value
+        if not value then
+            local char = Players.LocalPlayer.Character
+            local hum = char and char:FindFirstChild("Humanoid")
+            if hum then hum.WalkSpeed = 16 end
+        end
+    end,
+})
+
+localPlayerTab:CreateSlider({
+    name = "Walkspeed",
     range = { 16, 250 },
     increment = 1,
     value = 16,
@@ -398,8 +418,22 @@ localPlayerTab:CreateSlider({
     end,
 })
 
-localPlayerTab:CreateSlider({
+localPlayerTab:CreateToggle({
     name = "Jump Power Override",
+    value = false,
+    flag = "JumpPowerOverrideToggle",
+    callback = function(value)
+        jumpHeightOverrideEnabled = value
+        if not value then
+            local char = Players.LocalPlayer.Character
+            local hum = char and char:FindFirstChild("Humanoid")
+            if hum then hum.JumpHeight = 7.2 end
+        end
+    end,
+})
+
+localPlayerTab:CreateSlider({
+    name = "Jump Power",
     range = { 0, 250 },
     increment = 1,
     value = 10,
