@@ -392,6 +392,8 @@ end)
 
 local localPlayerTab = Window:CreateTab({ name = "Local Player", icon = 4483362458 })
 
+localPlayerTab:CreateSection({ name = "Movement" })
+
 localPlayerTab:CreateToggle({
     name = "Walkspeed Override",
     value = false,
@@ -591,6 +593,65 @@ localPlayerTab:CreateSlider({
     end,
 })
 
+-- Noclip, classic Infinite Yield style: a loop that force-sets CanCollide
+-- false on every part every frame. Simpler than CollisionGroups and doesn't
+-- depend on PhysicsService, so it should work regardless of executor quirks.
+local noclipOn = false
+
+if getgenv().WackyHubNoclipConn then
+    getgenv().WackyHubNoclipConn:Disconnect()
+end
+
+getgenv().WackyHubNoclipConn = RunService.Stepped:Connect(function()
+    if not noclipOn then return end
+    local char = Players.LocalPlayer.Character
+    if not char then return end
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end)
+
+local noclipToggle = localPlayerTab:CreateToggle({
+    name = "Noclip",
+    value = false,
+    flag = "NoclipToggle",
+    callback = function(value)
+        noclipOn = value
+        if not value then
+            local char = Players.LocalPlayer.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end,
+})
+
+localPlayerTab:CreateKeybind({
+    name = "Noclip Keybind",
+    value = Enum.KeyCode.N,
+    callback = function()
+        if not keybindsEnabled then return end
+        noclipOn = not noclipOn
+        if not noclipOn then
+            local char = Players.LocalPlayer.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+        noclipToggle:Set(noclipOn, true)
+    end,
+})
+
 local antiFlingEnabled = false
 local maxVelocity = 100
 local antiFlingConnection
@@ -678,6 +739,7 @@ cameraTab:CreateSlider({
         end
     end,
 })
+
 
 local UserInputService = game:GetService("UserInputService")
 
@@ -989,6 +1051,81 @@ cameraTab:CreateToggle({
     flag = "TeamColorToggle",
     callback = function(value)
         teamColorEnabled = value
+    end,
+})
+
+local lightingTab = Window:CreateTab({ name = "Lighting", icon = 4483362458 })
+
+local Lighting = game:GetService("Lighting")
+
+-- Full Bright: classic Infinite Yield trick, force Lighting to a flat bright
+-- setup with no shadows. Original values are saved so turning it off restores
+-- exactly how the game had it.
+local originalLighting = nil
+
+lightingTab:CreateToggle({
+    name = "Full Bright",
+    value = false,
+    flag = "FullBrightToggle",
+    callback = function(value)
+        if value then
+            originalLighting = {
+                Brightness = Lighting.Brightness,
+                ClockTime = Lighting.ClockTime,
+                Ambient = Lighting.Ambient,
+                OutdoorAmbient = Lighting.OutdoorAmbient,
+                GlobalShadows = Lighting.GlobalShadows,
+            }
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.Ambient = Color3.new(1, 1, 1)
+            Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+            Lighting.GlobalShadows = false
+        elseif originalLighting then
+            Lighting.Brightness = originalLighting.Brightness
+            Lighting.ClockTime = originalLighting.ClockTime
+            Lighting.Ambient = originalLighting.Ambient
+            Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
+            Lighting.GlobalShadows = originalLighting.GlobalShadows
+            originalLighting = nil
+        end
+    end,
+})
+
+-- No Fog: covers both the legacy Lighting.FogEnd/FogStart properties and any
+-- Atmosphere instance's Density, since most modern games use Atmosphere fog
+-- instead of the old Lighting fog properties.
+local originalFog = nil
+
+lightingTab:CreateToggle({
+    name = "No Fog",
+    value = false,
+    flag = "NoFogToggle",
+    callback = function(value)
+        local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+
+        if value then
+            originalFog = {
+                FogEnd = Lighting.FogEnd,
+                FogStart = Lighting.FogStart,
+                AtmosphereDensity = atmosphere and atmosphere.Density or nil,
+                AtmosphereHaze = atmosphere and atmosphere.Haze or nil,
+            }
+            Lighting.FogEnd = 100000
+            Lighting.FogStart = 0
+            if atmosphere then
+                atmosphere.Density = 0
+                atmosphere.Haze = 0
+            end
+        elseif originalFog then
+            Lighting.FogEnd = originalFog.FogEnd
+            Lighting.FogStart = originalFog.FogStart
+            if atmosphere and originalFog.AtmosphereDensity then
+                atmosphere.Density = originalFog.AtmosphereDensity
+                atmosphere.Haze = originalFog.AtmosphereHaze
+            end
+            originalFog = nil
+        end
     end,
 })
 
