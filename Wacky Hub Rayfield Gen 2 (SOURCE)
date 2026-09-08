@@ -464,7 +464,6 @@ local instantPromptsEnabled = false
 local originalHoldDurations = {}
 
 ProximityPromptService.PromptShown:Connect(function(prompt, inputType)
-    print("PromptShown fired:", prompt.Name, "| Parent:", prompt.Parent and prompt.Parent.Name or "nil", "| HoldDuration:", prompt.HoldDuration)
     if not instantPromptsEnabled then return end
     if originalHoldDurations[prompt] == nil then
         originalHoldDurations[prompt] = prompt.HoldDuration
