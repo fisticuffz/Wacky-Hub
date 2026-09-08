@@ -70,7 +70,7 @@ Created On : Jul 23, 2026
 - Show Profile Picture — floating profile picture overlay
 - Destroy UI — with confirmation popup
 - Server Info — live Ping stat, plus a popup with Job ID, Place ID, and player count
-- Interface — FPS stat with a Show FPS Counter toggle
+- Interface — FPS stat with a Show FPS Counter toggle and anti Afk
 
 **Local Player**
 - Walkspeed Override
@@ -78,6 +78,7 @@ Created On : Jul 23, 2026
 - Gravity Override
 - Fast Proximity Prompts
 - Fly — toggle or `F` keybind, with a Fly Speed slider
+- Noclip Toggle or `N` Keybind.
 - Anti-Fling — toggle with a Max Velocity slider
 - *Camera section:* FOV Changer, Freecam (toggle or `C` keybind) with a Freecam Speed slider
 - *ESP section:* ESP, Tracers, Team Color ESP
@@ -87,9 +88,14 @@ Created On : Jul 23, 2026
 - Better Save Instance
 - Rejoin Server / Server Hop — pick same-server rejoin or a fresh server, with a toast
 - *Utility Scripts:* Dark Dex++, UNC Test, Dark Dex
-
+- **Fun Scripts:** First Person toggle
+  
 **Teleportation**
 - Select Player dropdown + Teleport to Player (auto-refreshes as players join/leave)
+
+**Lighting**
+- Fullbright Toggle
+- Disable / No Fog Toggle
 
 **Settings**
 - Enable Keybinds — master switch for the `F` / `C` keybinds
