@@ -98,14 +98,14 @@ Created On : Jul 23, 2026
   
 **Teleportation**
 - Select Player dropdown + Teleport to Player (auto-refreshes as players join/leave)
+- Select Subplace Explorer Dropdown + Teleport to Subplace
 
 **Lighting**
 - Fullbright Toggle
 - Disable / No Fog Toggle
 
 **Settings**
-- Enable Keybinds — master switch for the `F` / `C` keybinds
-- *Fun:* Explode Selected Part — harmless visual explosion with camera shake
+- Enable Keybinds — master switch for the `F` / `C` / `N` keybinds
 
 Images
 
