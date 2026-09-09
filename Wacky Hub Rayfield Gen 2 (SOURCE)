@@ -2,6 +2,10 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local keybindsEnabled = true
+local notificationsEnabled = true
+local notifyFriendJoined = true
+local notifyPlayerJoined = true
+local notifyPlayerLeft = true
 
 local localPlayer = Players.LocalPlayer
 local accountText = "Logged in as: Unknown"
@@ -32,21 +36,26 @@ Window:Notify({
 
 Window:Popup({
     title = "What's new",
-    subtitle = "Version 2.5.3 (Noclip, Lighting Tab, And Toggleable Movement.)",
+    subtitle = "Version 2.5.4 (Subplace Explorer, Notification Settings, And A Cleanup.)",
     boxes = {
-        { title = "Added Noclip.", description = "Added noclip back, using a smoother CanCollide loop. Comes with a keybind (N) to toggle it.", icon = 93364949241311 },
-        { title = "Added A Lighting Tab.", description = "Full Bright and No Fog toggles now live in their own Lighting tab.", icon = 93364949241311 },
-        { title = "Walkspeed & Jump Power Are Toggleable.", description = "Both now have their own enable toggle, and reset to default automatically if you Destroy UI.", icon = 93364949241311 },
+        { title = "Added Subplace Explorer.", description = "New section in the Teleportation tab — pick a subplace from the dropdown and teleport straight there.", icon = 93364949241311 },
+        { title = "Added Notification Settings.", description = "New Settings section to turn toasts on/off entirely, or pick exactly which ones you get (Friend Joined, Player Joined, Player Left).", icon = 93364949241311 },
+        { title = "Removed Explode Selected Part.", description = "It never worked properly, so it's gone for now.", icon = 93364949241311 },
     },
     options = { { text = "Got it", style = "primary" } },
 })
 
 -- Toast whenever someone joins or leaves the server
 Players.PlayerAdded:Connect(function(player)
+    if not notificationsEnabled then return end
+
     local isFriend = false
     pcall(function()
         isFriend = Players.LocalPlayer:IsFriendsWith(player.UserId)
     end)
+
+    if isFriend and not notifyFriendJoined then return end
+    if not isFriend and not notifyPlayerJoined then return end
 
     Window:Toast({
         title = isFriend and "A friend has joined." or "A player has joined.",
@@ -56,6 +65,9 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
+    if not notificationsEnabled then return end
+    if not notifyPlayerLeft then return end
+
     Window:Toast({
         title = player.DisplayName .. " left the server.",
         avatar = player.UserId,
@@ -1303,6 +1315,60 @@ Players.PlayerRemoving:Connect(function()
     teleportDropdown:Refresh(getPlayerNames())
 end)
 
+teleportTab:CreateSection({ name = "Subplace Explorer" })
+
+local HttpService = game:GetService("HttpService")
+local subplaces = {} -- name -> placeId
+local selectedSubplacePlaceId = nil
+
+local function getSubplaceNames()
+    local names = {}
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(
+            game:HttpGet("https://develop.roblox.com/v1/universes/" .. game.GameId .. "/places?sortOrder=Asc&limit=100")
+        )
+    end)
+
+    if success and result and result.data then
+        subplaces = {}
+        for _, place in ipairs(result.data) do
+            local label = place.name .. " (" .. tostring(place.id) .. ")"
+            subplaces[label] = place.id
+            table.insert(names, label)
+        end
+    end
+
+    return names
+end
+
+local subplaceDropdown = teleportTab:CreateDropdown({
+    name = "Select Subplace",
+    options = {},
+    flag = "SubplaceDropdown",
+    callback = function(selected)
+        selectedSubplacePlaceId = subplaces[selected]
+    end,
+})
+
+teleportTab:CreateButton({
+    name = "Refresh Subplace List",
+    callback = function()
+        subplaceDropdown:Refresh(getSubplaceNames())
+    end,
+})
+
+teleportTab:CreateButton({
+    name = "Teleport to Subplace",
+    callback = function()
+        if not selectedSubplacePlaceId then return end
+        local TeleportService = game:GetService("TeleportService")
+        TeleportService:Teleport(selectedSubplacePlaceId, Players.LocalPlayer)
+    end,
+})
+
+-- Populate the list once on load
+subplaceDropdown:Refresh(getSubplaceNames())
+
 
 
 local settingsTab = Window:CreateTab({ name = "Settings", icon = 4483362458 })
@@ -1316,76 +1382,30 @@ settingsTab:CreateToggle({
     end,
 })
 
-settingsTab:CreateSection({ name = "Fun" })
+settingsTab:CreateSection({ name = "Notifications" })
 
-local function createExplosion(part)
-    if not part then return end
+settingsTab:CreateToggle({
+    name = "Enable Notifications",
+    value = true,
+    flag = "NotificationsEnabledToggle",
+    callback = function(value)
+        notificationsEnabled = value
+    end,
+})
 
-    local position = part.Position
-
-    local explosion = Instance.new("Explosion")
-    explosion.Position = position
-    explosion.BlastRadius = 0
-    explosion.BlastPressure = 0
-    explosion.DestroyJointRadiusPercent = 0
-    explosion.Visible = true
-    explosion.Parent = workspace
-
-    local attachment = Instance.new("Attachment")
-    attachment.Parent = part
-
-    local particles = Instance.new("ParticleEmitter")
-    particles.Texture = "rbxasset://textures/particles/fire_main.dds"
-    particles.Lifetime = NumberRange.new(0.3, 0.6)
-    particles.Rate = 0
-    particles.Speed = NumberRange.new(10, 25)
-    particles.SpreadAngle = Vector2.new(180, 180)
-    particles.Size = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 3),
-        NumberSequenceKeypoint.new(1, 0),
-    })
-    particles.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0),
-        NumberSequenceKeypoint.new(1, 1),
-    })
-    particles.Parent = attachment
-
-    particles:Emit(40)
-
-    local camera = workspace.CurrentCamera
-    local myChar = Players.LocalPlayer.Character
-    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if myHrp then
-        local distance = (myHrp.Position - position).Magnitude
-        if distance < 50 then
-            local shakeStrength = math.clamp((50 - distance) / 50, 0, 1) * 0.5
-            local originalCFrame = camera.CFrame
-            task.spawn(function()
-                for i = 1, 10 do
-                    local offset = Vector3.new(
-                        (math.random() - 0.5) * shakeStrength,
-                        (math.random() - 0.5) * shakeStrength,
-                        0
-                    )
-                    camera.CFrame = originalCFrame * CFrame.new(offset)
-                    task.wait(0.02)
-                end
-            end)
+settingsTab:CreateDropdown({
+    name = "Notification Types",
+    options = { "Friend Joined", "Player Joined", "Player Left" },
+    value = { "Friend Joined", "Player Joined", "Player Left" },
+    multiSelect = true,
+    flag = "NotificationTypesDropdown",
+    callback = function(selected)
+        local picked = {}
+        for _, label in ipairs(selected) do
+            picked[label] = true
         end
-    end
-
-    task.delay(1, function()
-        attachment:Destroy()
-    end)
-end
-
-settingsTab:CreateButton({
-    name = "Explode Selected Part",
-    callback = function()
-        local mouse = Players.LocalPlayer:GetMouse()
-        local target = mouse.Target
-        if target then
-            createExplosion(target)
-        end
+        notifyFriendJoined = picked["Friend Joined"] or false
+        notifyPlayerJoined = picked["Player Joined"] or false
+        notifyPlayerLeft = picked["Player Left"] or false
     end,
 })
