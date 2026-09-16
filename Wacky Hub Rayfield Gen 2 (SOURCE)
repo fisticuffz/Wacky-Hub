@@ -36,7 +36,7 @@ Window:Notify({
 
 Window:Popup({
     title = "What's new",
-    subtitle = "Version 2.5.4 (Subplace Explorer, Notification Settings, And A Cleanup.)",
+    subtitle = "Version 2.6.0 (Subplace Explorer, Notification Settings, And A Cleanup.)",
     boxes = {
         { title = "Added Subplace Explorer.", description = "New section in the Teleportation tab — pick a subplace from the dropdown and teleport straight there.", icon = 93364949241311 },
         { title = "Added Notification Settings.", description = "New Settings section to turn toasts on/off entirely, or pick exactly which ones you get (Friend Joined, Player Joined, Player Left).", icon = 93364949241311 },
@@ -406,7 +406,7 @@ local localPlayerTab = Window:CreateTab({ name = "Local Player", icon = 44833624
 
 localPlayerTab:CreateSection({ name = "Movement" })
 
-localPlayerTab:CreateToggle({
+local walkspeedOverrideToggle = localPlayerTab:CreateToggle({
     name = "Walkspeed Override",
     value = false,
     flag = "WalkspeedOverrideToggle",
@@ -420,7 +420,7 @@ localPlayerTab:CreateToggle({
     end,
 })
 
-localPlayerTab:CreateSlider({
+local walkspeedSlider = localPlayerTab:CreateSlider({
     name = "Walkspeed",
     range = { 16, 250 },
     increment = 1,
@@ -432,7 +432,7 @@ localPlayerTab:CreateSlider({
     end,
 })
 
-localPlayerTab:CreateToggle({
+local jumpOverrideToggle = localPlayerTab:CreateToggle({
     name = "Jump Power Override",
     value = false,
     flag = "JumpPowerOverrideToggle",
@@ -446,7 +446,7 @@ localPlayerTab:CreateToggle({
     end,
 })
 
-localPlayerTab:CreateSlider({
+local jumpSlider = localPlayerTab:CreateSlider({
     name = "Jump Power",
     range = { 0, 250 },
     increment = 1,
@@ -592,7 +592,7 @@ localPlayerTab:CreateKeybind({
     end,
 })
 
-localPlayerTab:CreateSlider({
+local flySpeedSlider = localPlayerTab:CreateSlider({
     name = "Fly Speed",
     range = { 10, 300 },
     increment = 5,
@@ -736,7 +736,7 @@ localPlayerTab:CreateSlider({
 local cameraTab = localPlayerTab
 cameraTab:CreateSection({ name = "Camera" })
 
-cameraTab:CreateSlider({
+local fovSlider = cameraTab:CreateSlider({
     name = "FOV Changer",
     range = { 0, 120 },
     increment = 1,
@@ -864,7 +864,7 @@ cameraTab:CreateKeybind({
     end,
 })
 
-cameraTab:CreateSlider({
+local freecamSpeedSlider = cameraTab:CreateSlider({
     name = "Freecam Speed",
     range = { 10, 300 },
     increment = 5,
@@ -1270,6 +1270,107 @@ scriptsTab:CreateToggle({
 
 local teleportTab = Window:CreateTab({ name = "Teleportation", icon = 4483362458 })
 
+teleportTab:CreateSection({ name = "Waypoints" })
+
+local waypointsFile = "WackyHubWaypoints.json"
+local waypoints = {} -- name -> { x, y, z }
+
+local function loadWaypointsFromFile()
+    if not (isfile and readfile and isfile(waypointsFile)) then return end
+    pcall(function()
+        local HttpService = game:GetService("HttpService")
+        waypoints = HttpService:JSONDecode(readfile(waypointsFile))
+    end)
+end
+
+local function saveWaypointsToFile()
+    if not (writefile) then return end
+    pcall(function()
+        local HttpService = game:GetService("HttpService")
+        writefile(waypointsFile, HttpService:JSONEncode(waypoints))
+    end)
+end
+
+loadWaypointsFromFile()
+
+local function getWaypointNames()
+    local names = {}
+    for name, _ in pairs(waypoints) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+    return names
+end
+
+local selectedWaypointName = nil
+local newWaypointName = ""
+
+teleportTab:CreateInput({
+    name = "Waypoint Name",
+    value = "",
+    placeholder = "e.g. Spawn, Boss Room...",
+    callback = function(text)
+        newWaypointName = text
+    end,
+})
+
+local waypointDropdown = teleportTab:CreateDropdown({
+    name = "Saved Waypoints",
+    options = getWaypointNames(),
+    flag = "WaypointDropdown",
+    callback = function(selected)
+        selectedWaypointName = selected
+    end,
+})
+
+local waypointButtonsGroup = teleportTab:CreateGroup({ direction = "row" })
+
+waypointButtonsGroup:CreateButton({
+    name = "Save Current Position",
+    callback = function()
+        if newWaypointName == "" then return end
+        local char = Players.LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        waypoints[newWaypointName] = { x = hrp.Position.X, y = hrp.Position.Y, z = hrp.Position.Z }
+        saveWaypointsToFile()
+        waypointDropdown:Refresh(getWaypointNames())
+
+        Window:Notify({
+            title = "Waypoint Saved",
+            content = "Saved \"" .. newWaypointName .. "\" at your current position.",
+            duration = 3,
+        })
+    end,
+})
+
+waypointButtonsGroup:CreateButton({
+    name = "Teleport to Waypoint",
+    callback = function()
+        if not selectedWaypointName then return end
+        local pos = waypoints[selectedWaypointName]
+        if not pos then return end
+
+        local char = Players.LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(pos.x, pos.y, pos.z)
+        end
+    end,
+})
+
+waypointButtonsGroup:CreateButton({
+    name = "Delete Waypoint",
+    callback = function()
+        if not selectedWaypointName then return end
+        waypoints[selectedWaypointName] = nil
+        saveWaypointsToFile()
+        waypointDropdown:Refresh(getWaypointNames())
+        selectedWaypointName = nil
+    end,
+})
+
 local function getPlayerNames()
     local names = {}
     for _, plr in ipairs(Players:GetPlayers()) do
@@ -1350,14 +1451,16 @@ local subplaceDropdown = teleportTab:CreateDropdown({
     end,
 })
 
-teleportTab:CreateButton({
+local subplaceButtonsGroup = teleportTab:CreateGroup({ direction = "row" })
+
+subplaceButtonsGroup:CreateButton({
     name = "Refresh Subplace List",
     callback = function()
         subplaceDropdown:Refresh(getSubplaceNames())
     end,
 })
 
-teleportTab:CreateButton({
+subplaceButtonsGroup:CreateButton({
     name = "Teleport to Subplace",
     callback = function()
         if not selectedSubplacePlaceId then return end
@@ -1371,6 +1474,100 @@ subplaceDropdown:Refresh(getSubplaceNames())
 
 
 
+local infoTab = Window:CreateTab({ name = "Info", icon = 4483362458 })
+
+infoTab:CreateSection({ name = "Session" })
+
+-- Time Played: shows how long you've been in THIS session (resets on rejoin),
+-- as total elapsed seconds (Stat only supports mutating its numeric value live,
+-- not prefix/suffix text, so we keep it simple rather than trying HH:MM:SS).
+local sessionStartTime = tick()
+
+local timePlayedStat = infoTab:CreateStat({
+    name = "Time Played",
+    value = 0,
+    suffix = "s this session",
+})
+
+if getgenv().WackyHubTimePlayedConn then
+    getgenv().WackyHubTimePlayedConn:Disconnect()
+end
+
+getgenv().WackyHubTimePlayedConn = RunService.Heartbeat:Connect(function()
+    timePlayedStat:Set(math.floor(tick() - sessionStartTime))
+end)
+
+infoTab:CreateSection({ name = "Player Info" })
+
+local selectedInfoPlayerName = nil
+
+local infoPlayerDropdown = infoTab:CreateDropdown({
+    name = "Select Player For Info",
+    options = getPlayerNames(),
+    flag = "InfoPlayerDropdown",
+    callback = function(selected)
+        selectedInfoPlayerName = selected
+    end,
+})
+
+local playerInfoButtonsGroup = infoTab:CreateGroup({ direction = "row" })
+
+playerInfoButtonsGroup:CreateButton({
+    name = "Refresh Player List",
+    callback = function()
+        infoPlayerDropdown:Refresh(getPlayerNames())
+    end,
+})
+
+playerInfoButtonsGroup:CreateButton({
+    name = "View Player Info",
+    callback = function()
+        if not selectedInfoPlayerName then return end
+        local targetPlayer = Players:FindFirstChild(selectedInfoPlayerName)
+        if not targetPlayer then return end
+
+        local HttpService = game:GetService("HttpService")
+        local userId = targetPlayer.UserId
+
+        local accountAgeText = "Unknown"
+        local followersText = "Unknown"
+        local friendsText = "Unknown"
+
+        pcall(function()
+            local userInfo = HttpService:JSONDecode(game:HttpGet("https://users.roblox.com/v1/users/" .. userId))
+            if userInfo and userInfo.created then
+                -- created is an ISO 8601 date string; just show it directly
+                accountAgeText = userInfo.created:sub(1, 10)
+            end
+        end)
+
+        pcall(function()
+            local followerInfo = HttpService:JSONDecode(game:HttpGet("https://friends.roblox.com/v1/users/" .. userId .. "/followers/count"))
+            if followerInfo and followerInfo.count then
+                followersText = tostring(followerInfo.count)
+            end
+        end)
+
+        pcall(function()
+            local friendInfo = HttpService:JSONDecode(game:HttpGet("https://friends.roblox.com/v1/users/" .. userId .. "/friends/count"))
+            if friendInfo and friendInfo.count then
+                friendsText = tostring(friendInfo.count)
+            end
+        end)
+
+        Window:Popup({
+            title = targetPlayer.DisplayName,
+            subtitle = "@" .. targetPlayer.Name,
+            boxes = {
+                { title = "Account Created", description = accountAgeText, icon = 93364949241311 },
+                { title = "Followers", description = followersText },
+                { title = "Friends", description = friendsText },
+            },
+            options = { { text = "Close", style = "primary" } },
+        })
+    end,
+})
+
 local settingsTab = Window:CreateTab({ name = "Settings", icon = 4483362458 })
 
 settingsTab:CreateToggle({
@@ -1379,6 +1576,18 @@ settingsTab:CreateToggle({
     flag = "KeybindsEnabledToggle",
     callback = function(value)
         keybindsEnabled = value
+    end,
+})
+
+settingsTab:CreateSection({ name = "Theme" })
+
+settingsTab:CreateDropdown({
+    name = "Theme",
+    options = { "default", "cobalt", "ember", "amethyst", "frost", "rose" },
+    value = "ember",
+    flag = "ThemeDropdown",
+    callback = function(selected)
+        Window:ChangeTheme(selected)
     end,
 })
 
@@ -1407,5 +1616,158 @@ settingsTab:CreateDropdown({
         notifyFriendJoined = picked["Friend Joined"] or false
         notifyPlayerJoined = picked["Player Joined"] or false
         notifyPlayerLeft = picked["Player Left"] or false
+    end,
+})
+
+settingsTab:CreateSection({ name = "Config Presets" })
+
+local presetsFile = "WackyHubPresets.json"
+local presets = {} -- name -> settings table
+
+local function loadPresetsFromFile()
+    if not (isfile and readfile and isfile(presetsFile)) then return end
+    pcall(function()
+        local HttpService = game:GetService("HttpService")
+        presets = HttpService:JSONDecode(readfile(presetsFile))
+    end)
+end
+
+local function savePresetsToFile()
+    if not writefile then return end
+    pcall(function()
+        local HttpService = game:GetService("HttpService")
+        writefile(presetsFile, HttpService:JSONEncode(presets))
+    end)
+end
+
+loadPresetsFromFile()
+
+local function getPresetNames()
+    local names = {}
+    for name, _ in pairs(presets) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+    return names
+end
+
+local newPresetName = ""
+local selectedPresetName = nil
+
+settingsTab:CreateInput({
+    name = "Preset Name",
+    value = "",
+    placeholder = "e.g. Testing, Chill...",
+    callback = function(text)
+        newPresetName = text
+    end,
+})
+
+local presetDropdown = settingsTab:CreateDropdown({
+    name = "Saved Presets",
+    options = getPresetNames(),
+    flag = "PresetDropdown",
+    callback = function(selected)
+        selectedPresetName = selected
+    end,
+})
+
+settingsTab:CreateButton({
+    name = "Save Preset",
+    callback = function()
+        if newPresetName == "" then return end
+
+        presets[newPresetName] = {
+            walkSpeedOverrideEnabled = walkSpeedOverrideEnabled,
+            walkSpeedValue = walkSpeedValue,
+            jumpHeightOverrideEnabled = jumpHeightOverrideEnabled,
+            jumpHeightValue = jumpHeightValue,
+            flying = flying,
+            flySpeed = flySpeed,
+            noclipOn = noclipOn,
+            freecamOn = freecamOn,
+            freecamSpeed = freecamSpeed,
+            fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70,
+        }
+        savePresetsToFile()
+        presetDropdown:Refresh(getPresetNames())
+
+        Window:Notify({
+            title = "Preset Saved",
+            content = "Saved \"" .. newPresetName .. "\".",
+            duration = 3,
+        })
+    end,
+})
+
+settingsTab:CreateButton({
+    name = "Load Preset",
+    callback = function()
+        if not selectedPresetName then return end
+        local p = presets[selectedPresetName]
+        if not p then return end
+
+        walkSpeedOverrideEnabled = p.walkSpeedOverrideEnabled
+        walkSpeedValue = p.walkSpeedValue
+        walkspeedOverrideToggle:Set(p.walkSpeedOverrideEnabled, true)
+        walkspeedSlider:Set(p.walkSpeedValue, true)
+
+        jumpHeightOverrideEnabled = p.jumpHeightOverrideEnabled
+        jumpHeightValue = p.jumpHeightValue
+        jumpOverrideToggle:Set(p.jumpHeightOverrideEnabled, true)
+        jumpSlider:Set(p.jumpHeightValue, true)
+
+        flySpeed = p.flySpeed
+        flySpeedSlider:Set(p.flySpeed, true)
+        if flying ~= p.flying then
+            flying = p.flying
+            if flying then startFly() else stopFly() end
+        end
+        flyToggle:Set(p.flying, true)
+
+        if noclipOn ~= p.noclipOn then
+            noclipOn = p.noclipOn
+            if not noclipOn then
+                local char = Players.LocalPlayer.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                            part.CanCollide = true
+                        end
+                    end
+                end
+            end
+        end
+        noclipToggle:Set(p.noclipOn, true)
+
+        freecamSpeed = p.freecamSpeed
+        freecamSpeedSlider:Set(p.freecamSpeed, true)
+        if freecamOn ~= p.freecamOn then
+            freecamOn = p.freecamOn
+            toggleFreecam(freecamOn)
+        end
+        freecamToggle:Set(p.freecamOn, true)
+
+        if workspace.CurrentCamera then
+            workspace.CurrentCamera.FieldOfView = p.fov
+        end
+        fovSlider:Set(p.fov, true)
+
+        Window:Notify({
+            title = "Preset Loaded",
+            content = "Loaded \"" .. selectedPresetName .. "\".",
+            duration = 3,
+        })
+    end,
+})
+
+settingsTab:CreateButton({
+    name = "Delete Preset",
+    callback = function()
+        if not selectedPresetName then return end
+        presets[selectedPresetName] = nil
+        savePresetsToFile()
+        presetDropdown:Refresh(getPresetNames())
+        selectedPresetName = nil
     end,
 })
