@@ -500,6 +500,41 @@ localPlayerTab:CreateToggle({
     end,
 })
 
+-- Click to Teleport: while enabled, left-click anywhere on the ground to
+-- teleport there. gameProcessedEvent skips clicks that hit UI (like Rayfield
+-- itself) so you don't accidentally teleport while clicking a button.
+local clickToTeleportEnabled = false
+local clickToTeleportInputService = game:GetService("UserInputService")
+
+if getgenv().WackyHubClickTPConn then
+    getgenv().WackyHubClickTPConn:Disconnect()
+end
+
+getgenv().WackyHubClickTPConn = clickToTeleportInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if not clickToTeleportEnabled then return end
+    if gameProcessedEvent then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+
+    local mouse = Players.LocalPlayer:GetMouse()
+    local hitPos = mouse.Hit and mouse.Hit.Position
+    if not hitPos then return end
+
+    local char = Players.LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = CFrame.new(hitPos + Vector3.new(0, 3, 0))
+    end
+end)
+
+localPlayerTab:CreateToggle({
+    name = "Click to Teleport",
+    value = false,
+    flag = "ClickToTeleportToggle",
+    callback = function(value)
+        clickToTeleportEnabled = value
+    end,
+})
+
 
 -- Fly variables
 local flying = false
@@ -748,6 +783,61 @@ local fovSlider = cameraTab:CreateSlider({
         local camera = workspace.CurrentCamera
         if camera then
             camera.FieldOfView = value
+        end
+    end,
+})
+
+-- First Person / Third Person Lock: forces zoom distance to a fixed value.
+-- Re-applied every frame via Heartbeat since some games reset camera zoom
+-- distances on their own, which would otherwise silently undo this.
+local firstPersonLocked = false
+local thirdPersonLocked = false
+local firstPersonLockToggle
+local thirdPersonLockToggle
+
+if getgenv().WackyHubCameraLockConn then
+    getgenv().WackyHubCameraLockConn:Disconnect()
+end
+
+getgenv().WackyHubCameraLockConn = RunService.Heartbeat:Connect(function()
+    local player = Players.LocalPlayer
+    if firstPersonLocked then
+        player.CameraMinZoomDistance = 0.5
+        player.CameraMaxZoomDistance = 0.5
+    elseif thirdPersonLocked then
+        player.CameraMinZoomDistance = 10
+        player.CameraMaxZoomDistance = 10
+    end
+end)
+
+firstPersonLockToggle = cameraTab:CreateToggle({
+    name = "First Person Lock",
+    value = false,
+    flag = "FirstPersonLockToggle",
+    callback = function(value)
+        firstPersonLocked = value
+        if value then
+            thirdPersonLocked = false
+            thirdPersonLockToggle:Set(false, true)
+        else
+            Players.LocalPlayer.CameraMinZoomDistance = 0.5
+            Players.LocalPlayer.CameraMaxZoomDistance = 400
+        end
+    end,
+})
+
+thirdPersonLockToggle = cameraTab:CreateToggle({
+    name = "Third Person Lock",
+    value = false,
+    flag = "ThirdPersonLockToggle",
+    callback = function(value)
+        thirdPersonLocked = value
+        if value then
+            firstPersonLocked = false
+            firstPersonLockToggle:Set(false, true)
+        else
+            Players.LocalPlayer.CameraMinZoomDistance = 0.5
+            Players.LocalPlayer.CameraMaxZoomDistance = 400
         end
     end,
 })
@@ -1566,6 +1656,19 @@ playerInfoButtonsGroup:CreateButton({
             },
             options = { { text = "Close", style = "primary" } },
         })
+    end,
+})
+
+playerInfoButtonsGroup:CreateButton({
+    name = "Copy Username",
+    callback = function()
+        if not selectedInfoPlayerName then return end
+        local targetPlayer = Players:FindFirstChild(selectedInfoPlayerName)
+        if not targetPlayer then return end
+
+        if setclipboard then
+            setclipboard(targetPlayer.Name .. " (" .. tostring(targetPlayer.UserId) .. ")")
+        end
     end,
 })
 
