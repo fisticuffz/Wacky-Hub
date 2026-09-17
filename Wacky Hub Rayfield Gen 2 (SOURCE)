@@ -36,11 +36,12 @@ Window:Notify({
 
 Window:Popup({
     title = "What's new",
-    subtitle = "Version 2.6.0 (Subplace Explorer, Notification Settings, And A Cleanup.)",
+    subtitle = "Version 2.6.4 (Waypoints, Info Tab, Presets, And Themes.)",
     boxes = {
-        { title = "Added Subplace Explorer.", description = "New section in the Teleportation tab — pick a subplace from the dropdown and teleport straight there.", icon = 93364949241311 },
-        { title = "Added Notification Settings.", description = "New Settings section to turn toasts on/off entirely, or pick exactly which ones you get (Friend Joined, Player Joined, Player Left).", icon = 93364949241311 },
-        { title = "Removed Explode Selected Part.", description = "It never worked properly, so it's gone for now.", icon = 93364949241311 },
+        { title = "Added Waypoints.", description = "Save your current position under a name, teleport back anytime, and it's saved across sessions if your executor supports it.", icon = 93364949241311 },
+        { title = "Added An Info Tab.", description = "Time Played and a Player Info viewer (account age, followers, friends) both live here now.", icon = 93364949241311 },
+        { title = "Added Config Presets.", description = "Save your Walkspeed, Jump, Fly, Noclip, Freecam, and FOV setup under a name, then load it back whenever.", icon = 93364949241311 },
+        { title = "Added A Theme Selector.", description = "Pick from six built-in themes in Settings — switches instantly, no reload needed.", icon = 93364949241311 },
     },
     options = { { text = "Got it", style = "primary" } },
 })
