@@ -143,7 +143,25 @@ Tab:CreateToggle({
 local Button = Tab:CreateButton({
    Name = "Destroy UI",
    Callback = function()
-   Rayfield:Destroy()
+        -- Stop the persistent Walkspeed/JumpHeight loop and reset to Roblox
+        -- defaults first, otherwise it keeps forcing your last slider values
+        -- forever even after the UI is gone. getgenv() is used here (instead
+        -- of a plain local) because this button is defined before the loop
+        -- further down the script, so a local wouldn't be visible yet at
+        -- parse time -- getgenv() is looked up fresh when the button is
+        -- actually clicked, so ordering doesn't matter.
+        if getgenv().WackyHubLegacyWalkJumpConn then
+            getgenv().WackyHubLegacyWalkJumpConn:Disconnect()
+        end
+
+        local char = Players.LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if hum then
+            hum.WalkSpeed = 16
+            hum.JumpHeight = 7.2
+        end
+
+        Rayfield:Destroy()
    end,
 })
 
@@ -155,7 +173,7 @@ local RunService = game:GetService("RunService")
 local walkSpeedValue = 10
 local jumpHeightValue = 10
 
-RunService.Heartbeat:Connect(function()
+getgenv().WackyHubLegacyWalkJumpConn = RunService.Heartbeat:Connect(function()
     local char = Players.LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
     if hum then
