@@ -13,9 +13,6 @@ if localPlayer then
     accountText = "Logged in as: " .. localPlayer.DisplayName .. " (@" .. localPlayer.Name .. ")"
 end
 
--- NOTE: Gen2's documented CreateWindow properties are name, subtitle, theme, icon,
--- showName, showIcon, configuration, locale, translations, translator, fallbackFont.
--- Discord/KeySystem/ScriptID from Gen1 aren't part of that list, so they're dropped here.
 local Window = Rayfield:CreateWindow({
     name = "Wacky Hub",
     subtitle = "by RoboSubZero2",
@@ -36,12 +33,11 @@ Window:Notify({
 
 Window:Popup({
     title = "What's new",
-    subtitle = "Version 2.6.4 (Waypoints, Info Tab, Presets, And Themes.)",
+    subtitle = "Version 2.6.4 (Click to teleport, Copy Username And First Person and Third Person lock.)",
     boxes = {
-        { title = "Added Waypoints.", description = "Save your current position under a name, teleport back anytime, and it's saved across sessions if your executor supports it.", icon = 93364949241311 },
-        { title = "Added An Info Tab.", description = "Time Played and a Player Info viewer (account age, followers, friends) both live here now.", icon = 93364949241311 },
-        { title = "Added Config Presets.", description = "Save your Walkspeed, Jump, Fly, Noclip, Freecam, and FOV setup under a name, then load it back whenever.", icon = 93364949241311 },
-        { title = "Added A Theme Selector.", description = "Pick from six built-in themes in Settings — switches instantly, no reload needed.", icon = 93364949241311 },
+        { title = "Added Click To Teleport.", description = "Lets you Teleport To Any Where You Click On.", icon = 93364949241311 },
+        { title = "Added First Person And Third Person Lock.", description = "In Local Player's Camera Section, Right Above FOV There Are Two Switches To Turn Third Person And First Person On Or Off And Locks The Camera To What You Switch It To.", icon = 93364949241311 },
+        { title = "Added Copy Username", description = "In The Info Tab Next To View Player Info. Copies The Player's ", icon = 93364949241311 },
     },
     options = { { text = "Got it", style = "primary" } },
 })
