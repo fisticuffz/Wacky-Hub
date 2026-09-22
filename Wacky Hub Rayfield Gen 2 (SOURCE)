@@ -13,6 +13,9 @@ if localPlayer then
     accountText = "Logged in as: " .. localPlayer.DisplayName .. " (@" .. localPlayer.Name .. ")"
 end
 
+-- NOTE: Gen2's documented CreateWindow properties are name, subtitle, theme, icon,
+-- showName, showIcon, configuration, locale, translations, translator, fallbackFont.
+-- Discord/KeySystem/ScriptID from Gen1 aren't part of that list, so they're dropped here.
 local Window = Rayfield:CreateWindow({
     name = "Wacky Hub",
     subtitle = "by RoboSubZero2",
@@ -33,11 +36,11 @@ Window:Notify({
 
 Window:Popup({
     title = "What's new",
-    subtitle = "Version 2.6.4 (Click to teleport, Copy Username And First Person and Third Person lock.)",
+    subtitle = "Version 2.7.0 (Click To Teleport, Copy Username, And Camera Locks.)",
     boxes = {
-        { title = "Added Click To Teleport.", description = "Lets you Teleport To Any Where You Click On.", icon = 93364949241311 },
-        { title = "Added First Person And Third Person Lock.", description = "In Local Player's Camera Section, Right Above FOV There Are Two Switches To Turn Third Person And First Person On Or Off And Locks The Camera To What You Switch It To.", icon = 93364949241311 },
-        { title = "Added Copy Username", description = "In The Info Tab Next To View Player Info. Copies The Player's ", icon = 93364949241311 },
+        { title = "Added Click To Teleport.", description = "Toggle it on in Local Player, then left-click anywhere on the ground to teleport there.", icon = 93364949241311 },
+        { title = "Added Copy Username.", description = "New button in the Info tab's Player Info section — grabs the selected player's name and UserID.", icon = 93364949241311 },
+        { title = "Added First Person / Third Person Lock.", description = "Two new toggles in the Camera section, right above FOV. Holds even if the game tries to reset your zoom.", icon = 93364949241311 },
     },
     options = { { text = "Got it", style = "primary" } },
 })
